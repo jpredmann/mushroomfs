@@ -1,4 +1,4 @@
-mushroomfs
+MushroomFS
 ==========
 
 Mushroom File System, Course Project
