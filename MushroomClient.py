@@ -440,4 +440,190 @@ This class will process all system calls received by the Fuse module
         FILE SYSTEM ROUTINES
         """
         
+        def release( self, flags ):
         
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        successful = True
+                    else:
+                        client.master_server.release( self.file_descriptor, flags )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    
+			
+        def ftruncate( self, len ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        ftrunc_result = client.master_server.ftrucate( self.file_descriptor, len )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return ftrunc_result
+
+
+        def read( self, size, offset ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        data = client.master_server.read( self.file_descriptor, size, offset )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return data
+ 
+
+        def write( self, buffer, offset ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        write_result = client.master_server.write( self.file_descriptor, buffer, offset )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return write_result
+
+
+		def fgetattr(self):
+			while 1:
+				try:
+					fuse_server.synlock.acquire()
+					if (self.timestamp != fuse_server.timestamp):
+						fuse_server.synlock.release()
+						self._reinitialize()
+						continue
+					ret = fuse_server.server.fgetattr(self.fd)
+					fuse_server.synlock.release()
+					break
+				except:
+					fuse_server.exception_handler()
+					self._reinitialize()
+			return ret 
+
+        def fgetattr( self ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        attr = client.master_server.fgetattr( self.file_descriptor )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return attr
+
+			
+        def flush( self ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        flush_result = client.master_server.flush( self.file_descriptor )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return flush_result 
+
+		def fsync(self, isfsyncfile):
+			while 1:
+				try:
+					fuse_server.synlock.acquire()
+					if (self.timestamp != fuse_server.timestamp):
+						fuse_server.synlock.release()
+						self._reinitialize()
+						continue
+					ret = fuse_server.server.fsync(self.fd, isfsyncfile)
+					fuse_server.synlock.release()
+					break
+				except:
+					fuse_server.exception_handler()
+					self._reinitialize()
+			return ret
+			
+        def fsync( self, isfsyncfile ):
+        
+            successful = False
+            
+            while not successful:
+            
+                try:
+                
+                    client.lock.acquire()
+                    if( self.timestamp != client.timestamp ):
+                        client.lock.release()
+                        self._reinitialize()
+                    else:
+                        fsync_result = client.master_server.fsync( self.file_descriptor, isfsyncfile )
+                        client.lock.release()
+                        successful = True
+                except:
+                    client.reconnect()
+                    self._reinitialize()
+                    
+            return fsync_result
