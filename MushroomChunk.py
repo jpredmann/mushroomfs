@@ -91,6 +91,8 @@ class MushroomChunk( Pyro.core.ObjBase ):
 			
 		return op_result
 
+
+
 	def getattr( self, path ):
 	
 		try:
