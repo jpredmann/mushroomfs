@@ -82,17 +82,6 @@ class MushroomChunk( Pyro.core.ObjBase ):
 		os.chdir( self.root )
 		Pyro.core.ObjBase.__init__( self )
 
-	def statfs( self ):
-	
-		try:
-			op_result =  os.statvfs( self.root )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-
-
 	def getattr( self, path ):
 	
 		try:
@@ -100,62 +89,7 @@ class MushroomChunk( Pyro.core.ObjBase ):
 		except:
 			op_result = -errno.ENOENT
 			
-		return op_result
-
-	def readlink( self, path ):
-	
-		try:
-			op_result =  os.readlink( self.root + path )
-		except:
-			op_result = -errno.ENOENT
-			
-		return op_result
-
-	def readdir( self, path ):
-	
-		try:
-			op_result = os.listdir( self.root + path )
-		except:
-			op_result = -errno.EBADF
-			
-		return op_result
-
-	def open( self, path, flags, mode ):
-	
-		# if successful the op_result holds the file descriptor
-		try:
-			if mode:
-			    op_result = os.open( self.root + path, flags, mode[0] )
-			else:
-				op_result = os.open( self.root + path, flags )
-				
-		# if not successful op_result holds the error code		
-		except:
-			op_result -errno.ENOENT
-			
-		return op_result
-
-	# TODO: Determine what if anything should be returned here
-	def release( self, file_descriptor, flags ):
-	
-		try:
-			if fd > 0:
-				os.close( file_descriptor )
-				op_result = True
-		except:
-			op_result =  -errno.ENOSYS
-			
-		return op_result
-			
-
-	def ftruncate( self, file_descriptor, length ):
-	
-		try:
-			op_result = os.ftruncate( file_descriptor, length )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
+		return op_result			
 
 	def read( self, file_descriptor, size, offset ):
 	
@@ -178,89 +112,6 @@ class MushroomChunk( Pyro.core.ObjBase ):
 		
 		return op_result
 
-	def fgetattr( self, file_descriptor ):
-	
-		try:
-			op_result = os.fstat( file_descriptor )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def flush( self, file_descriptor ):
-	
-		try:
-			op_result = os.close( os.dup( file_descriptor ) )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	# TODO: determine what should be returned
-	def fsync( self, file_descriptor, isfsyncfile ):
-	
-		try:
-			if isfsyncfile and hasattr(os, 'fdatasync'):
-				os.fdatasync( file_descriptor )
-			else:
-				os.fsync( file_descriptor )
-		except:
-			return -errno.EACCES
-
-	# TODO: return issues
-	def truncate( self, path, length ):
-	
-		try:
-			file = open( self.root + path, 'ab' )
-			file.truncate( length )
-			file.close()
-		except:
-			return -errno.EACCES
-
-	def mkdir(self, path, mode):
-	
-		try:
-			op_result = os.mkdir( self.root + path, mode )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def rmdir( self, path ):
-	
-		try:
-			op_result = os.rmdir( self.root + path )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def symlink( self, source_path, target_path ):
-	
-		try:
-			op_result = os.symlink( source_path, self.root + target_path )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def link( self, source_path, target_path ):
-	
-		try:
-			op_result = os.link( source_path, self.root + target_path )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def unlink( self, path ):
-	
-		try:
-			op_result = os.unlink( self.root + path )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
 
 	def rename( self, source_path, target_path ):
 	
@@ -271,29 +122,6 @@ class MushroomChunk( Pyro.core.ObjBase ):
 			
 		return op_result
 
-	def chmod( self, path, mode ):
-	
-		try:
-			op_result = os.chmod( self.root + path, mode )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
-
-	def chown(self, path, user, group):
-		try:
-			return os.chown(self.root + path, user, group)
-		except:
-			return -errno.EACCES
-
-	def mknod( self, path, mode, device ):
-	
-		try:
-			op_result = os.mknod( self.root + path, mode, device )
-		except:
-			op_result = -errno.EACCES
-			
-		return op_result
 
 	def utime( self, path, times ):
 	
