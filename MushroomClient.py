@@ -578,6 +578,7 @@ This class will process all system calls received by the Fuse module
         def write( self, buffer, offset ):
         
             successful = False
+            write_result = {}
             
             while not successful:
             
@@ -595,7 +596,7 @@ This class will process all system calls received by the Fuse module
                     	chunk_size = client.master_server.get_chunk_size()
                     	num_chunks = client.get_num_chunks( len( buffer), chunk_size )
                     	chunk_ids = client.master_server.alloc( self.path, num_chunks )
-                    	self.write_chunks( chunk_ids, buffer, chunk_size )
+                    	write_result = self.write_chunks( chunk_ids, buffer, chunk_size )
                     	
                         client.lock.release()
                         successful = True
@@ -603,7 +604,8 @@ This class will process all system calls received by the Fuse module
                     client.reconnect_master_server()
                     self._reinitialize()
                     
-            return write_result
+            client.master_server.confirm_write( write_results )
+            return len( buffer )
             
         def write_chunks( chunk_ids, buffer, chunk_size ):
         
