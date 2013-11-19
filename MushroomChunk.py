@@ -91,11 +91,11 @@ class MushroomChunk( Pyro.core.ObjBase ):
 			
 		return op_result			
 
-	def read( self, file_descriptor, size, offset ):
+	def read( self, path ):
 	
 		try:
-			os.lseek( file_descriptor, offset, 0 )
-			op_result = os.read( file_descriptor, size )
+			with open(path, "rb") as file:
+    			op_result = file.read()
 		except:
 			op_result = -errno.EACCES
 			

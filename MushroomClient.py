@@ -1,7 +1,8 @@
 
-import os, sys, threading, time
+import os, sys, threading, time, time_uuid
 from errno import *
 from stat import *
+from operator import itemgetter
 
 # Try importing Fuse, generate an error message and exit if it cannot import Fuse
 # Using Fuse-Python 0.2
@@ -319,7 +320,7 @@ This class will process all system calls received by the Fuse module
 				
 		return symlink_result
 		
-	def symlink( self, source_path, target_path ):
+	def link( self, source_path, target_path ):
 	
 	    successful = False
 	
@@ -467,6 +468,9 @@ This class will process all system calls received by the Fuse module
                         self.mode = mode[0]
                     
                     successful = True;
+                    
+                except FileNotFoundException error:
+                	raise error
                 
                 except:
                     client.reconnect()
@@ -481,6 +485,10 @@ This class will process all system calls received by the Fuse module
                 
             else:
                 self.__init__( self.path, self.flags )
+                
+        def get_num_chunks( size, chunk_size ):
+        
+        	return ( size + chunk_size - 1 ) // chunk_size
                 
                 
         """
@@ -543,7 +551,21 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         self._reinitialize()
                     else:
-                        data = client.master_server.read( self.file_descriptor, size, offset )
+                    	data_chunks = []
+                    	
+                    	chunk_ids = client.master_server.get_chunk_ids()
+                    	sortec_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
+                    	
+                    	for id in sorted_chunk_ids:
+                    	
+                    		chunk_name = str( id[0] ) + id[1]
+                    		chunk_location = client.master_server.get_chunkloc( chunk_name )
+                    		ip = chunk_location[0]
+                    		port= chunk_location[1]
+                    		client.connect_chunk_server( ip, port )
+                    		data_chunks.append( client.chunk_server.read( chunk_name )
+                    		
+                    	data = b"".join( data_chunks )
                         client.lock.release()
                         successful = True
                 except:
@@ -566,7 +588,15 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         self._reinitialize()
                     else:
-                        write_result = client.master_server.write( self.file_descriptor, buffer, offset )
+                    
+                    	if client.master_server.exists():
+                    		client.delete( self.path )
+                    		
+                    	chunk_size = client.master_server.get_chunk_size()
+                    	num_chunks = client.get_num_chunks( len( buffer), chunk_size )
+                    	chunk_ids = client.master_server.alloc( self.path, num_chunks )
+                    	self.write_chunks( chunk_ids, buffer, chunk_size )
+                    	
                         client.lock.release()
                         successful = True
                 except:
@@ -574,6 +604,28 @@ This class will process all system calls received by the Fuse module
                     self._reinitialize()
                     
             return write_result
+            
+        def write_chunks( chunk_ids, buffer, chunk_size ):
+        
+        	successful = False
+        	chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
+        	
+        	while not successful:
+        	
+        		try:
+        
+        	
+        			chunk_server_list = client.master_server.get_chunk_servers()
+        	
+        			for index in range( 0, len( chunks ) ):
+        				chunk_id = chunk_ids[ index ]
+        				chunk_location = chunk_server_list[ index]
+        				ip = chunk_location[0]
+        				port = chunk_location[1]
+        				client.connect_chunk_server( ip, port )
+        		except:
+        			
+        		
 
 
         def fgetattr( self ):
@@ -663,6 +715,10 @@ This class will process all system calls received by the Fuse module
         
         self.file_class = self.MushroomFile
         return Fuse.main(self, *file_args, **kw )
+        
+class FileNotFoundException( Exception ):
+
+	pass
             
 
 # Main program.
