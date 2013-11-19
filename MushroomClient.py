@@ -629,6 +629,7 @@ This class will process all system calls received by the Fuse module
         	
         				for index in range( 0, len( chunks ) ):
         					chunk_id = chunk_ids[ index ]
+        					chunk_server_index = index % len( chunk_server_list )
         					chunk_location = chunk_server_list[ index]
         					ip = chunk_location[0]
         					port = chunk_location[1]
@@ -637,7 +638,7 @@ This class will process all system calls received by the Fuse module
         					actual_writes[ chunk_id ] = chunk_location
         				successful_chunk = True
         			except:
-        				del chunk_server_list[ index ]
+        				del chunk_server_list[ chunk_server_index ]
         		
 
 
