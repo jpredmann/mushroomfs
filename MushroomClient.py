@@ -600,7 +600,7 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return write_result
@@ -609,22 +609,28 @@ This class will process all system calls received by the Fuse module
         
         	successful = False
         	chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
+        	actual_writes = {}
         	
         	while not successful:
         	
         		try:
-        
-        	
         			chunk_server_list = client.master_server.get_chunk_servers()
-        	
-        			for index in range( 0, len( chunks ) ):
-        				chunk_id = chunk_ids[ index ]
-        				chunk_location = chunk_server_list[ index]
-        				ip = chunk_location[0]
-        				port = chunk_location[1]
-        				client.connect_chunk_server( ip, port )
         		except:
+        			client.reconnect_master_server()
         			
+        		if chunk_server_list:	
+        			try:
+        	
+        				for index in range( 0, len( chunks ) ):
+        					chunk_id = chunk_ids[ index ]
+        					chunk_location = chunk_server_list[ index]
+        					ip = chunk_location[0]
+        					port = chunk_location[1]
+        					client.connect_chunk_server( ip, port )
+        					client.chunk_server.write( chunks[ index ] )
+        					actual_writes[ chunk_id ] = chunk_location
+        			except:
+        				
         		
 
 
