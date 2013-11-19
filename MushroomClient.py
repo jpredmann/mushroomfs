@@ -607,16 +607,22 @@ This class will process all system calls received by the Fuse module
             
         def write_chunks( chunk_ids, buffer, chunk_size ):
         
-        	successful = False
+        	successful_master = False
+        	successful_chunk = False
         	chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
         	actual_writes = {}
         	
-        	while not successful:
+        	while not successful_master:
         	
-        		try:
+        	    try:
         			chunk_server_list = client.master_server.get_chunk_servers()
+        			successful_master = True
         		except:
         			client.reconnect_master_server()
+        	
+        	while not successful_chunk:
+        	
+
         			
         		if chunk_server_list:	
         			try:
@@ -629,8 +635,9 @@ This class will process all system calls received by the Fuse module
         					client.connect_chunk_server( ip, port )
         					client.chunk_server.write( chunks[ index ] )
         					actual_writes[ chunk_id ] = chunk_location
+        				successful_chunk = True
         			except:
-        				
+        				del chunk_server_list[ index ]
         		
 
 
