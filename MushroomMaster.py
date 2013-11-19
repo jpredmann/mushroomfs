@@ -451,7 +451,7 @@ def main():
 
 	# Instantiate chunk server
 	try:
-		chunk_server = MushroomChunk( mount_point )
+		master_server = MushroomMaster( mount_point )
 	except:
 		print >> sys.stderr, "Error: could not mount " + mount_point
 		sys.exit(1)
@@ -484,7 +484,7 @@ def main():
 			
 		# Use persistent connection (we don't want to use a Pyro
 		# nameserver, to keep the things simple).
-		uri = daemon.connectPersistent(chunk_server, 'MushroomFS')
+		uri = daemon.connectPersistent(master_server, 'MushroomFS')
 		
 		try:
 			# Start the daemon.

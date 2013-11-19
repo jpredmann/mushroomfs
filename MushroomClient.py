@@ -620,11 +620,10 @@ This class will process all system calls received by the Fuse module
         		except:
         			client.reconnect_master_server()
         	
-        	while not successful_chunk:
+        	if chunk_server_list:
         	
-
-        			
-        		if chunk_server_list:	
+        		while not successful_chunk:
+        		
         			try:
         	
         				for index in range( 0, len( chunks ) ):
@@ -635,10 +634,14 @@ This class will process all system calls received by the Fuse module
         					port = chunk_location[1]
         					client.connect_chunk_server( ip, port )
         					client.chunk_server.write( chunks[ index ] )
+        					del chunks[ index ]
         					actual_writes[ chunk_id ] = chunk_location
+        					
         				successful_chunk = True
         			except:
         				del chunk_server_list[ chunk_server_index ]
+        				
+        	return actual_writes
         		
 
 
