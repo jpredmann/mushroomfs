@@ -89,7 +89,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table = {}			# Look-up table to map from file paths to chunk ids
         self.chunk_table = {} 			# Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}	# Look-up table to map chunk servers to chunks held
-        self.chunk_servers = null		# List of registered chunk servers
+        self.chunk_servers = []		# List of registered chunk servers
         Pyro.core.ObjBase.__init__( self )
         
         
@@ -190,7 +190,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     def register_chunk_server(self, ip_address, port_number)
     
-    	self.chunkservers.append( (ip_address, port_number) )
+    	self.chunk_servers.append( (ip_address, port_number) )
             
             
     # Need to implement a replace chunk server method that can be called by Zookeeper
