@@ -35,32 +35,52 @@ if not hasattr(fuse, '__version__'):
     raise RuntimeError, \
         "your fuse-py doesn't know of fuse.__version__, probably it's too old."
 
+
+#######################
+### MUSHROOM CLIENT ###
+#######################
+
 # Mushroom client class, inherits from class Fuse
 class MushroomClient(Fuse):
     """
     This class will process all system calls received by the Fuse module
     """
 
+    
+    ############################
+    ### Class Initialization ###
+    ############################
+    
     def __init__( self, *args, **kw ):
     
         # Initialize Fuse object
         Fuse.__init__( self, *args, **kw )
         
-        # Initialize Pyro
+        # Initialize Pyro Client
         Pyro.core.initClient(0)
         
         # Instance Variables
-        
-        # TODO: Document these instance variables
-        self.lock = threading.Lock()
-        self.host_master = '127.0.0.1'
-        self.port_master = 3636
-        self.authentication_on = False
-        self.connected_master = False
-        self.connected_chunk = False
-        self.timestamp = 0
+        self.lock = threading.Lock()    #Used for Locking & Blocking
+        self.host_master = '127.0.0.1'  # IP for Master
+        self.port_master = 3636         # Port for Master
+        self.authentication_on = False  # For SSL
+        self.connected_master = False   # Connection status for Master
+        self.connected_chunk = False    # Connection status for Chunk
+        self.timestamp = 0              # Timestamp for data syncing
         
         
+    
+    
+    ##########################################
+    ### Subroutine: Connect Master Server
+    ###
+    ### Used by: reconnect_master_server, statfs, getattr, readlink,
+    ###          readdir, truncate, rename, rename_chunks, mkdir,
+    ###          rmdir, symlink, link, unlink, chmod, chown, mknod,
+    ###          utime, access, MushroomFile.__init__,
+    ###          MushroomFile.ftruncate, MushroomFile.read
+    ###
+    ##########################################
     # TODO: Make parametric to connect to either chunk or master servers
     def connect_master_server( self ):
         
@@ -164,7 +184,7 @@ class MushroomClient(Fuse):
         self.lock.release()
         
         self.chunk_server.rebindURI()
-        
+        ##TODO change this to chunk server
         self.connect_master_server()
         
     def statfs( self ):
@@ -249,6 +269,7 @@ class MushroomClient(Fuse):
                 
                 successful = True
             except:
+                #TODO: change this to reconnect master server
                 self.reconnect()
                 
         return truncated_file
@@ -562,7 +583,7 @@ class MushroomClient(Fuse):
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect_mastet_server()
+                    client.reconnect_master_server()
                     
             
         def ftruncate( self, len ):
