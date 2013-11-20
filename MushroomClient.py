@@ -71,16 +71,11 @@ class MushroomClient(Fuse):
         
     
     
-    ##########################################
-    ### Subroutine: Connect Master Server
-    ###
-    ### Used by: reconnect_master_server, statfs, getattr, readlink,
-    ###          readdir, truncate, rename, rename_chunks, mkdir,
-    ###          rmdir, symlink, link, unlink, chmod, chown, mknod,
-    ###          utime, access, MushroomFile.__init__,
-    ###          MushroomFile.ftruncate, MushroomFile.read
-    ###
-    ##########################################
+    ###############################################
+    ### Subroutine: Connect Master Server       ###
+    ###                                         ###
+    ### Used by: reconnect_master_server, Main  ###
+    ###############################################
     # TODO: Make parametric to connect to either chunk or master servers
     def connect_master_server( self ):
         
@@ -118,7 +113,15 @@ class MushroomClient(Fuse):
             
         # Release the lock so that other threads can acquire it
         self.lock.release()
-        
+    
+
+    #############################################################
+    ### Subroutine: Connect Client Server                     ###
+    ###                                                       ###
+    ### Used by: reconnect_chunk_server, rename_chunks        ###
+    ###          MushroomFile.read, MushroomFile.write_chunks ###
+    #############################################################
+
     # TODO: Make parametric to connect to either chunk or master servers
     def connect_chunk_server( self, ip, port ):
         
@@ -156,6 +159,21 @@ class MushroomClient(Fuse):
             
         # Release the lock so that other threads can acquire it
         self.lock.release()
+
+            
+            
+    ##################################################################
+    ### Subroutine: Reconnect Master Server                        ###
+    ###                                                            ###
+    ### Used by: statfs, getattr, readlink, readdir, truncate,     ###
+    ###          rmdir,rename, rename_chunks, mkdir, symlink,      ###
+    ###          link, unlink,chmod, chown, mknod, utime, access,  ###
+    ###          MushroomFile.__init__, MushroomFile.release,      ###
+    ###          MushroomFile.ftruncate, MushroomFile.read,        ###
+    ###          MushroomFile.write, MushroomFile.write_chunks,    ###
+    ###          MushroomFile.fgetattr, MushroomFile.flush,        ###
+    ###          MushroomFile.fsync                                ###
+    ##################################################################
                 
     def reconnect_master_server( self ):
     
@@ -171,6 +189,13 @@ class MushroomClient(Fuse):
         self.master_server.rebindURI()
         
         self.connect_master_server()
+
+
+    ###################################################
+    ### Subroutine: Reconnect Master Server         ###
+    ###                                             ###
+    ### Used by:   rename_chunks, MushroomFile.read ###
+    ###################################################
         
     def reconnect_chunk_server( self ):
     
@@ -184,9 +209,13 @@ class MushroomClient(Fuse):
         self.lock.release()
         
         self.chunk_server.rebindURI()
-        ##TODO change this to chunk server
-        self.connect_master_server()
+        self.connect_chunk_server()
+
         
+    ##########################
+    ### Routine: statfs    ###
+    ##########################
+
     def statfs( self ):
     
         successful = False
@@ -204,6 +233,11 @@ class MushroomClient(Fuse):
                 
         return stats
         
+
+    ##########################
+    ### Routine: getattr   ###
+    ##########################
+
     def getattr( self, path ):
     
         successful = False
@@ -220,6 +254,11 @@ class MushroomClient(Fuse):
                 self.reconnect_master_server()
                 
         return attr
+
+
+    ##########################
+    ### Routine: readlink  ###
+    ##########################
         
     def readlink( self, path ):
     
@@ -237,6 +276,11 @@ class MushroomClient(Fuse):
                 self.reconnect_master_server()
                 
         return link
+
+        
+    ##########################
+    ### Routine: readdir   ###
+    ##########################
         
     def readdir( self, path ):
     
@@ -255,7 +299,11 @@ class MushroomClient(Fuse):
             except:
                 self.reconnect_master_server()
                 
-        
+  
+    ##########################
+    ### Routine: truncate  ###
+    ##########################
+
     def truncate( self, path, length ):
     
         successful = False
@@ -269,11 +317,14 @@ class MushroomClient(Fuse):
                 
                 successful = True
             except:
-                #TODO: change this to reconnect master server
-                self.reconnect()
+                self.reconnect_master_server()
                 
         return truncated_file
-        
+            
+            
+    ##########################
+    ### Routine: rename    ###
+    ##########################
         
     def rename( self, source_path, target_path  ):
     
@@ -309,6 +360,13 @@ class MushroomClient(Fuse):
                 
         client.master_server.confirm_write( write_results )
         return op_result
+
+            
+    ##################################
+    ### Subroutine: rename chunks  ###
+    ###                            ###
+    ### Used by: rename            ###
+    ##################################
         
     def rename_chunks( chunk_ids, target_path ):
     
@@ -344,6 +402,10 @@ class MushroomClient(Fuse):
                 except:
                     self.reconnect_chunk_server()
 
+    
+    ##########################
+    ### Routine: mkdir     ###
+    ##########################
             
     def mkdir( self, path, mode ):
     
@@ -361,7 +423,12 @@ class MushroomClient(Fuse):
                 self.reconnect_master_server()
                 
         return dir
-        
+
+
+    ##########################
+    ### Routine: rmdir     ###
+    ##########################
+
     def rmdir( self, path ):
     
         successful = False
@@ -739,7 +806,7 @@ class MushroomClient(Fuse):
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return attr
@@ -762,7 +829,7 @@ class MushroomClient(Fuse):
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return flush_result 
@@ -785,7 +852,7 @@ class MushroomClient(Fuse):
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return fsync_result
