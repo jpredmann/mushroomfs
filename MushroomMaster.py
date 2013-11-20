@@ -1,5 +1,5 @@
 import math
-import uuid         #Used to generate unique chunk ids/keys
+import time_uuid    #Used to generate unique chunk ids/keys
 import os           #Used to write data out
 import time         #Used to create timestamp for archiving deleted files
 import operator     #Used in a Master 'tester method' (Server.dump_metadata())

@@ -53,10 +53,11 @@ This class will process all system calls received by the Fuse module
         
         # TODO: Document these instance variables
         self.lock = threading.Lock()
-        self.host = '127.0.0.1'
-        self.port = 3636
+        self.host_master = '127.0.0.1'
+        self.port_master = 3636
         self.authentication_on = False
-        self.connected = False
+        self.connected_master = False
+        self.connected_chunk = False
         self.timestamp = 0
         
         
@@ -82,11 +83,11 @@ This class will process all system calls received by the Fuse module
                 protocol = "PYROLOC://"
                 
             # Get the master server proxy object from Pyro RPC system
-            self.master_server = Pyro.core.getProxyForURI( protocol + self.host + ":" + str(self.port) + "/PyGFS" )
+            self.master_server = Pyro.core.getProxyForURI( protocol + self.host_master + ":" + str(self.port_master) + "/PyGFS" )
             
             # Check that the returned Pyro proxy object works
             if self.master_server.getattr('/'):
-                self.connected = True
+                self.connected_master = True
                 self.timestamp = time.time()
                 
             else:
@@ -120,11 +121,11 @@ This class will process all system calls received by the Fuse module
                 protocol = "PYROLOC://"
                 
             # Get the master server proxy object from Pyro RPC system
-            self.chunk_server = Pyro.core.getProxyForURI( protocol + str(ip) + ":" + str(port) + "/PyGFS" )
+            self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/PyGFS" )
             
             # Check that the returned Pyro proxy object works
-            if self.master_server.getattr('/'):
-                self.connected = True
+            if self.chunk_server.getattr('/'):
+                self.connected_chunk = True
                 self.timestamp = time.time()
                 
             else:
@@ -144,12 +145,12 @@ This class will process all system calls received by the Fuse module
             pass
             
         self.lock.acquire()
-        self.connected = False
+        self.connected_master = False
         self.lock.release()
         
         self.master_server.rebindURI()
         
-        self.connect()
+        self.connect_master_server()
         
 	def statfs( self ):
 	
@@ -157,7 +158,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				stats = self.master_server.statfs()
 				self.lock.release()
@@ -165,7 +165,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return stats
 		
@@ -175,22 +175,14 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
-				chunk_ids = self.master_server.get_chunk_ids( path )
-				for id in chunk_ids:
-					location = self.master_server.get_chunkloc( id )
-					ip = location[0]
-					port = location[1]
-					connect_chunk_server( ip, port )
-					self.chunk_server.get_chunk
 				attr = self.master_server.getattr( path )
 				self.lock.release()
 				
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return attr
 		
@@ -200,7 +192,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				link = self.master_server.readlink( path )
 				self.lock.release()
@@ -208,11 +199,11 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return link
 		
-	def readdir( self, path, offset ):
+	def readdir( self, path ):
 	
 	    successful = False
 	
@@ -220,14 +211,14 @@ This class will process all system calls received by the Fuse module
 			try:
 			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
-				for item in self.master_server.readdir( path, offset )
+				for item in self.master_server.readdir( path )
 				    yield fuse.Direntry( item )
 				self.lock.release()
 				
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		
 	def truncate( self, path, length ):
@@ -264,6 +255,76 @@ This class will process all system calls received by the Fuse module
 				self.reconnect()
 				
 		return renamed_file
+		
+	def rename( self, source_path, target_path  ):
+	
+		successful = False
+		rename_result = {}
+		
+		while not successful:
+		
+			try:
+			
+				client.lock.acquire()
+				if( self.timestamp != client.timestamp ):
+					client.lock.release()
+					self._reinitialize()
+				else:
+				
+					if client.master_server.exists( source_path ):
+						if client.master_server.exits( target_path ):
+							op_result = -errno.EACCES
+						else:
+							chunk_ids = client.master_server.get_chunk_ids( source_path )
+							self.rename_chunks( chunk_ids, target_path )
+							self.master_server.rename( source_path, target_path )
+						
+					else:
+						op_result = -errno.EACCES
+						
+					client.lock.release()
+					successful = True
+			except:
+				client.reconnect_master_server()
+				self._reinitialize()
+				
+		client.master_server.confirm_write( write_results )
+		return op_result
+		
+	def rename_chunks( chunk_ids, target_path ):
+	
+		successful_master = False
+		successful_chunk = False
+		actual_renames = {}
+		
+		while not successful_master:
+		
+			try:
+				chunk_server_list = client.master_server.get_chunk_servers()
+				successful_master = True
+			except:
+				client.reconnect_master_server()
+		
+		if chunk_server_list:
+		
+			while not successful_chunk:
+			
+				try:
+		
+					for index in range( 0, len( chunk_ids ) ):
+						chunk_id = chunk_ids[ index ]
+						chunk_server_index = index % len( chunk_server_list )
+						chunk_location = chunk_server_list[ index]
+						ip = chunk_location[0]
+						port = chunk_location[1]
+						client.connect_chunk_server( ip, port )
+						new_chunk_id = ( chunk_id[0], target_path )
+						client.chunk_server.rename( chunk_id, new_chunk_id )
+						
+					successful_chunk = True
+				except:
+					self.reconnect_chunk_server()
+
             
 	def mkdir( self, path, mode ):
 	
@@ -271,7 +332,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				dir = self.master_server.mkdir( path, mode )
 				self.lock.release()
@@ -279,7 +339,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return dir
 		
@@ -297,7 +357,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return remove_result
 		
@@ -308,7 +368,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				symlink_result = self.master_server.symlink( source_path, target_path )
 				self.lock.release()
@@ -316,7 +375,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return symlink_result
 		
@@ -326,7 +385,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				link_result = self.master_server.link( source_path, target_path )
 				self.lock.release()
@@ -334,7 +392,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return link_result
 		
@@ -344,7 +402,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				unlink_result = self.master_server.unlink( path )
 				self.lock.release()
@@ -352,7 +409,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return unlink_result
 		
@@ -362,7 +419,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				chmod_result = self.master_server.chmod( path, mode )
 				self.lock.release()
@@ -370,7 +426,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return chmod_result
 		
@@ -380,7 +436,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				chown_result = self.master_server.chown( path, user, group )
 				self.lock.release()
@@ -388,7 +443,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return chown_result
 		
@@ -398,7 +453,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				nod = self.master_server.mknod( path, mode, dev )
 				self.lock.release()
@@ -406,7 +460,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return nod
 		
@@ -416,7 +470,6 @@ This class will process all system calls received by the Fuse module
 	
 		while not successful:
 			try:
-			    # TODO: Add calls to chunk servers
 				self.lock.acquire()
 				utime_result = self.master_server.utime( path, times )
 				self.lock.release()
@@ -424,7 +477,7 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return utime_result
 		
@@ -442,11 +495,10 @@ This class will process all system calls received by the Fuse module
 				successful = True
 				
 			except:
-				self.reconnect()
+				self.reconnect_master_server()
 				
 		return access_result
-
-
+		
     class MushroomFile():
     
         def __init__( self, path, flags, *mode ):
@@ -591,7 +643,7 @@ This class will process all system calls received by the Fuse module
                     else:
                     
                     	if client.master_server.exists():
-                    		client.delete( self.path )
+                    		client.ftruncate( self.path,  )
                     		
                     	chunk_size = client.master_server.get_chunk_size()
                     	num_chunks = client.get_num_chunks( len( buffer), chunk_size )
