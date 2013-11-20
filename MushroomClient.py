@@ -10,19 +10,19 @@ try:
     import fuse
     from fuse import Fuse, FuseArgs
 except ImportError:
-	print >> sys.stderr, "Fuse does not appear to be properly installed"
-	sys.exit( 1 )
-	
+    print >> sys.stderr, "Fuse does not appear to be properly installed"
+    sys.exit( 1 )
+    
 # Try importing Pyro, generate an error message and exit if it cannot import Pyro
 # Using Pyro version 3.16
 try:
-	import Pyro.core
-	import Pyro.protocol
+    import Pyro.core
+    import Pyro.protocol
 except ImportError:
-	print >> sys.stderr, "Pyro does not appear to be properly installed"
-	sys.exit( 1 )
-	
-	
+    print >> sys.stderr, "Pyro does not appear to be properly installed"
+    sys.exit( 1 )
+    
+    
 # Initialize the fuse api environment
 # Set fuse version number
 fuse.fuse_python_api = ( 0, 2 )
@@ -37,14 +37,14 @@ if not hasattr(fuse, '__version__'):
 
 # Mushroom client class, inherits from class Fuse
 class MushroomClient(Fuse):
-"""
-This class will process all system calls received by the Fuse module
-"""
+    """
+    This class will process all system calls received by the Fuse module
+    """
 
     def __init__( self, *args, **kw ):
     
-    	# Initialize Fuse object
-        Fuse.__init__( self, *args, *kw )
+        # Initialize Fuse object
+        Fuse.__init__( self, *args, **kw )
         
         # Initialize Pyro
         Pyro.core.initClient(0)
@@ -76,14 +76,14 @@ This class will process all system calls received by the Fuse module
         # Try getting the Pyro proxy object for the Master Server    
         try:
         
-        	# Set protocol to use for Pyro RPC (secured or not)
+            # Set protocol to use for Pyro RPC (secured or not)
             if self.authentication_on:
                 protocol = "PYROLOCSSL://"
             else:
                 protocol = "PYROLOC://"
                 
             # Get the master server proxy object from Pyro RPC system
-            self.master_server = Pyro.core.getProxyForURI( protocol + self.host_master + ":" + str(self.port_master) + "/PyGFS" )
+            self.master_server = Pyro.core.getProxyForURI( protocol + self.host_master + ":" + str(self.port_master) + "/MushroomFS" )
             
             # Check that the returned Pyro proxy object works
             if self.master_server.getattr('/'):
@@ -114,7 +114,7 @@ This class will process all system calls received by the Fuse module
         # Try getting the Pyro proxy object for the Master Server    
         try:
         
-        	# Set protocol to use for Pyro RPC (secured or not)
+            # Set protocol to use for Pyro RPC (secured or not)
             if self.authentication_on:
                 protocol = "PYROLOCSSL://"
             else:
@@ -167,336 +167,336 @@ This class will process all system calls received by the Fuse module
         
         self.connect_master_server()
         
-	def statfs( self ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				stats = self.master_server.statfs()
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return stats
-		
-	def getattr( self, path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				attr = self.master_server.getattr( path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return attr
-		
-	def readlink( self, path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				link = self.master_server.readlink( path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return link
-		
-	def readdir( self, path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-			    # TODO: Add calls to chunk servers
-				self.lock.acquire()
-				for item in self.master_server.readdir( path )
-				    yield fuse.Direntry( item )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		
-	def truncate( self, path, length ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-			    # TODO: Add calls to chunk servers
-				self.lock.acquire()
-				truncated_file = self.master_server.truncate( path, length )
-				self.lock.release()
-				
-				successful = True
-			except:
-				self.reconnect()
-				
-		return truncated_file
-		
-		
-	def rename( self, source_path, target_path  ):
-	
-		successful = False
-		rename_result = {}
-		
-		while not successful:
-		
-			try:
-			
-				client.lock.acquire()
-				if( self.timestamp != client.timestamp ):
-					client.lock.release()
-					self._reinitialize()
-				else:
-				
-					if client.master_server.exists( source_path ):
-						if client.master_server.exits( target_path ):
-							op_result = -errno.EACCES
-						else:
-							chunk_ids = client.master_server.get_chunk_ids( source_path )
-							self.rename_chunks( chunk_ids, target_path )
-							self.master_server.rename( source_path, target_path )
-						
-					else:
-						op_result = -errno.EACCES
-						
-					client.lock.release()
-					successful = True
-			except:
-				client.reconnect_master_server()
-				self._reinitialize()
-				
-		client.master_server.confirm_write( write_results )
-		return op_result
-		
-	def rename_chunks( chunk_ids, target_path ):
-	
-		successful_master = False
-		successful_chunk = False
-		actual_renames = {}
-		
-		while not successful_master:
-		
-			try:
-				chunk_server_list = client.master_server.get_chunk_servers()
-				successful_master = True
-			except:
-				client.reconnect_master_server()
-		
-		if chunk_server_list:
-		
-			while not successful_chunk:
-			
-				try:
-		
-					for index in range( 0, len( chunk_ids ) ):
-						chunk_id = chunk_ids[ index ]
-						chunk_server_index = index % len( chunk_server_list )
-						chunk_location = chunk_server_list[ index]
-						ip = chunk_location[0]
-						port = chunk_location[1]
-						client.connect_chunk_server( ip, port )
-						new_chunk_id = ( chunk_id[0], target_path )
-						client.chunk_server.rename( chunk_id, new_chunk_id )
-						
-					successful_chunk = True
-				except:
-					self.reconnect_chunk_server()
+    def statfs( self ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                stats = self.master_server.statfs()
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return stats
+        
+    def getattr( self, path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                attr = self.master_server.getattr( path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return attr
+        
+    def readlink( self, path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                link = self.master_server.readlink( path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return link
+        
+    def readdir( self, path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                # TODO: Add calls to chunk servers
+                self.lock.acquire()
+                for item in self.master_server.readdir( path ):
+                    yield fuse.Direntry( item )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        
+    def truncate( self, path, length ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                # TODO: Add calls to chunk servers
+                self.lock.acquire()
+                truncated_file = self.master_server.truncate( path, length )
+                self.lock.release()
+                
+                successful = True
+            except:
+                self.reconnect()
+                
+        return truncated_file
+        
+        
+    def rename( self, source_path, target_path  ):
+    
+        successful = False
+        rename_result = {}
+        
+        while not successful:
+        
+            try:
+            
+                client.lock.acquire()
+                if( self.timestamp != client.timestamp ):
+                    client.lock.release()
+                    self._reinitialize()
+                else:
+                
+                    if client.master_server.exists( source_path ):
+                        if client.master_server.exits( target_path ):
+                            op_result = -errno.EACCES
+                        else:
+                            chunk_ids = client.master_server.get_chunk_ids( source_path )
+                            self.rename_chunks( chunk_ids, target_path )
+                            self.master_server.rename( source_path, target_path )
+                        
+                    else:
+                        op_result = -errno.EACCES
+                        
+                    client.lock.release()
+                    successful = True
+            except:
+                client.reconnect_master_server()
+                self._reinitialize()
+                
+        client.master_server.confirm_write( write_results )
+        return op_result
+        
+    def rename_chunks( chunk_ids, target_path ):
+    
+        successful_master = False
+        successful_chunk = False
+        actual_renames = {}
+        
+        while not successful_master:
+        
+            try:
+                chunk_server_list = client.master_server.get_chunk_servers()
+                successful_master = True
+            except:
+                client.reconnect_master_server()
+        
+        if chunk_server_list:
+        
+            while not successful_chunk:
+            
+                try:
+        
+                    for index in range( 0, len( chunk_ids ) ):
+                        chunk_id = chunk_ids[ index ]
+                        chunk_server_index = index % len( chunk_server_list )
+                        chunk_location = chunk_server_list[ index]
+                        ip = chunk_location[0]
+                        port = chunk_location[1]
+                        client.connect_chunk_server( ip, port )
+                        new_chunk_id = ( chunk_id[0], target_path )
+                        client.chunk_server.rename( chunk_id, new_chunk_id )
+                        
+                    successful_chunk = True
+                except:
+                    self.reconnect_chunk_server()
 
             
-	def mkdir( self, path, mode ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				dir = self.master_server.mkdir( path, mode )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return dir
-		
-	def rmdir( self, path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-			    # TODO: Add calls to chunk servers
-				self.lock.acquire()
-				remove_result = self.master_server.rmdir( path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return remove_result
-		
-		
-	def symlink( self, source_path, target_path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				symlink_result = self.master_server.symlink( source_path, target_path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return symlink_result
-		
-	def link( self, source_path, target_path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				link_result = self.master_server.link( source_path, target_path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return link_result
-		
-	def unlink( self, path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				unlink_result = self.master_server.unlink( path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return unlink_result
-		
-	def chmod( self, path, mode ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				chmod_result = self.master_server.chmod( path, mode )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return chmod_result
-		
-	def chown( self, path, user, group ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				chown_result = self.master_server.chown( path, user, group )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return chown_result
-		
-	def mknod( self, path, mode, dev ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				nod = self.master_server.mknod( path, mode, dev )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return nod
-		
-	def utime( self, path, times ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-				self.lock.acquire()
-				utime_result = self.master_server.utime( path, times )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return utime_result
-		
-	def access( self, path, mode ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-			    # TODO: Add calls to chunk servers
-				self.lock.acquire()
-				access_result = self.master_server.access( path, mode)
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect_master_server()
-				
-		return access_result
-		
+    def mkdir( self, path, mode ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                dir = self.master_server.mkdir( path, mode )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return dir
+        
+    def rmdir( self, path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                # TODO: Add calls to chunk servers
+                self.lock.acquire()
+                remove_result = self.master_server.rmdir( path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return remove_result
+        
+        
+    def symlink( self, source_path, target_path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                symlink_result = self.master_server.symlink( source_path, target_path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return symlink_result
+        
+    def link( self, source_path, target_path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                link_result = self.master_server.link( source_path, target_path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return link_result
+        
+    def unlink( self, path ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                unlink_result = self.master_server.unlink( path )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return unlink_result
+        
+    def chmod( self, path, mode ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                chmod_result = self.master_server.chmod( path, mode )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return chmod_result
+        
+    def chown( self, path, user, group ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                chown_result = self.master_server.chown( path, user, group )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return chown_result
+        
+    def mknod( self, path, mode, dev ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                nod = self.master_server.mknod( path, mode, dev )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return nod
+        
+    def utime( self, path, times ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                self.lock.acquire()
+                utime_result = self.master_server.utime( path, times )
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return utime_result
+        
+    def access( self, path, mode ):
+    
+        successful = False
+    
+        while not successful:
+            try:
+                # TODO: Add calls to chunk servers
+                self.lock.acquire()
+                access_result = self.master_server.access( path, mode)
+                self.lock.release()
+                
+                successful = True
+                
+            except:
+                self.reconnect_master_server()
+                
+        return access_result
+        
     class MushroomFile():
     
         def __init__( self, path, flags, *mode ):
@@ -505,7 +505,7 @@ This class will process all system calls received by the Fuse module
             
             while not successful:
             
-            	try:
+                try:
                     client.lock.acquire()
                     self.file_desctriptor = client.master_server.open( path, flags, mode )
                     self.timestamp =  client.timestamp
@@ -519,8 +519,8 @@ This class will process all system calls received by the Fuse module
                     
                     successful = True;
                     
-                except FileNotFoundException error:
-                	raise error
+                except FileNotFoundException as error:
+                    raise error
                 
                 except:
                     client.reconnect_master_server()
@@ -538,7 +538,7 @@ This class will process all system calls received by the Fuse module
                 
         def get_num_chunks( size, chunk_size ):
         
-        	return ( size + chunk_size - 1 ) // chunk_size
+            return ( size + chunk_size - 1 ) // chunk_size
                 
                 
         """
@@ -564,7 +564,7 @@ This class will process all system calls received by the Fuse module
                 except:
                     client.reconnect_mastet_server()
                     
-			
+            
         def ftruncate( self, len ):
         
             successful = False
@@ -601,25 +601,25 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         self._reinitialize()
                     else:
-                    	data_chunks = []
-                    	
-                    	chunk_ids = client.master_server.get_chunk_ids( self.path )
-                    	sorted_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
-                    	
-                    	for id in sorted_chunk_ids:
-                    	
-                    		chunk_name = str( id[0] ) + id[1]
-                    		chunk_location = client.master_server.get_chunkloc( chunk_name )
-                    		location = chunk_location[0]
-                    		ip = location[0]
-                    		port = location[1]
-                    		try:
-                    			client.connect_chunk_server( ip, port )
-                    			data_chunks.append( client.chunk_server.read( chunk_name )
-                    		except:
-                    			client.reconnect_chunk_server()
-                    		
-                    	data = b"".join( data_chunks )
+                        data_chunks = []
+                        
+                        chunk_ids = client.master_server.get_chunk_ids( self.path )
+                        sorted_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
+                        
+                        for id in sorted_chunk_ids:
+                        
+                            chunk_name = str( id[0] ) + id[1]
+                            chunk_location = client.master_server.get_chunkloc( chunk_name )
+                            location = chunk_location[0]
+                            ip = location[0]
+                            port = location[1]
+                            try:
+                                client.connect_chunk_server( ip, port )
+                                data_chunks.append( client.chunk_server.read( chunk_name ) )
+                            except:
+                                client.reconnect_chunk_server()
+                            
+                        data = b"".join( data_chunks )
                         client.lock.release()
                         successful = True
                 except:
@@ -644,14 +644,14 @@ This class will process all system calls received by the Fuse module
                         self._reinitialize()
                     else:
                     
-                    	if client.master_server.exists():
-                    		client.ftruncate( self.path,  )
-                    		
-                    	chunk_size = client.master_server.get_chunk_size()
-                    	num_chunks = client.get_num_chunks( len( buffer), chunk_size )
-                    	chunk_ids = client.master_server.alloc( self.path, num_chunks )
-                    	write_result = self.write_chunks( chunk_ids, buffer, chunk_size )
-                    	
+                        if client.master_server.exists():
+                            client.ftruncate( self.path,  )
+                            
+                        chunk_size = client.master_server.get_chunk_size()
+                        num_chunks = client.get_num_chunks( len( buffer), chunk_size )
+                        chunk_ids = client.master_server.alloc( self.path, num_chunks )
+                        write_result = self.write_chunks( chunk_ids, buffer, chunk_size )
+                        
                         client.lock.release()
                         successful = True
                 except:
@@ -663,42 +663,42 @@ This class will process all system calls received by the Fuse module
             
         def write_chunks( chunk_ids, buffer, chunk_size ):
         
-        	successful_master = False
-        	successful_chunk = False
-        	chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
-        	actual_writes = {}
-        	
-        	while not successful_master:
-        	
-        	    try:
-        			chunk_server_list = client.master_server.get_chunk_servers()
-        			successful_master = True
-        		except:
-        			client.reconnect_master_server()
-        	
-        	if chunk_server_list:
-        	
-        		while not successful_chunk:
-        		
-        			try:
-        	
-        				for index in range( 0, len( chunks ) ):
-        					chunk_id = chunk_ids[ index ]
-        					chunk_server_index = index % len( chunk_server_list )
-        					chunk_location = chunk_server_list[ index]
-        					ip = chunk_location[0]
-        					port = chunk_location[1]
-        					client.connect_chunk_server( ip, port )
-        					client.chunk_server.write( chunks[ index ] )
-        					del chunks[ index ]
-        					actual_writes[ chunk_id ] = chunk_location
-        					
-        				successful_chunk = True
-        			except:
-        				del chunk_server_list[ chunk_server_index ]
-        				
-        	return actual_writes
-        		
+            successful_master = False
+            successful_chunk = False
+            chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
+            actual_writes = {}
+            
+            while not successful_master:
+            
+                try:
+                    chunk_server_list = client.master_server.get_chunk_servers()
+                    successful_master = True
+                except:
+                    client.reconnect_master_server()
+            
+            if chunk_server_list:
+            
+                while not successful_chunk:
+                
+                    try:
+            
+                        for index in range( 0, len( chunks ) ):
+                            chunk_id = chunk_ids[ index ]
+                            chunk_server_index = index % len( chunk_server_list )
+                            chunk_location = chunk_server_list[ index]
+                            ip = chunk_location[0]
+                            port = chunk_location[1]
+                            client.connect_chunk_server( ip, port )
+                            client.chunk_server.write( chunks[ index ] )
+                            del chunks[ index ]
+                            actual_writes[ chunk_id ] = chunk_location
+                            
+                        successful_chunk = True
+                    except:
+                        del chunk_server_list[ chunk_server_index ]
+                        
+            return actual_writes
+                
 
 
         def fgetattr( self ):
@@ -723,7 +723,7 @@ This class will process all system calls received by the Fuse module
                     
             return attr
 
-			
+            
         def flush( self ):
         
             successful = False
@@ -746,7 +746,7 @@ This class will process all system calls received by the Fuse module
                     
             return flush_result 
 
-			
+            
         def fsync( self, isfsyncfile ):
         
             successful = False
@@ -776,39 +776,39 @@ This class will process all system calls received by the Fuse module
         
 class FileNotFoundException( Exception ):
 
-	pass
+    pass
             
 
 # Main program.
 def main():
-	global client
+    global client
 
-	# Initialize the PyGFS client object.
-	client = MushroomClient(version=fuse.__version__, dash_s_do='setsingle')
+    # Initialize the PyGFS client object.
+    client = MushroomClient(version=fuse.__version__, dash_s_do='setsingle')
 
-	# Add custom options.
-	client.parser.add_option(mountopt="host", metavar="HOSTNAME", default="127.0.0.1",
-		help="The Mushroom server hostname [default: 127.0.0.1]")
-	client.parser.add_option(mountopt="port", metavar="PORT", default="3636",
-		help="The MushroomFS port on the server [default: 3636]")
-	client.parser.add_option("-x", "--secure", action="store_true", dest="authentication_on",
-		help="Run MushroomFS in secure mode, using x509 certificate authentication and encryption")
+    # Add custom options.
+    client.parser.add_option(mountopt="host", metavar="HOSTNAME", default="127.0.0.1",
+        help="The Mushroom server hostname [default: 127.0.0.1]")
+    client.parser.add_option(mountopt="port", metavar="PORT", default="3636",
+        help="The MushroomFS port on the server [default: 3636]")
+    client.parser.add_option("-x", "--secure", action="store_true", dest="authentication_on",
+        help="Run MushroomFS in secure mode, using x509 certificate authentication and encryption")
 
-	# Parse user options.
-	client.parse(values=client, errex=1)
-	if (len(sys.argv) > 1):
-		if not (client.fuse_args.getmod('showhelp') or client.fuse_args.getmod('showversion')):
-			# Connect to the Mushroom Master Server.
-			while client.connected_master == 0:
-				client.connect_master_server()
-				time.sleep(1)
-	try:
-		# Mount the filesystem.
-		client.main()
-	except Exception, error:
-		# Unmount the filesystem.
-		if client.parser.fuse_args.mountpoint:
-			print >> sys.stderr,"umounting " + str( client.parser.fuse_args.mountpoint )
+    # Parse user options.
+    client.parse(values=client, errex=1)
+    if (len(sys.argv) > 1):
+        if not (client.fuse_args.getmod('showhelp') or client.fuse_args.getmod('showversion')):
+            # Connect to the Mushroom Master Server.
+            while client.connected_master == 0:
+                client.connect_master_server()
+                time.sleep(1)
+    try:
+        # Mount the filesystem.
+        client.main()
+    except Exception, error:
+        # Unmount the filesystem.
+        if client.parser.fuse_args.mountpoint:
+            print >> sys.stderr,"umounting " + str( client.parser.fuse_args.mountpoint )
 
 if __name__ == '__main__':
         main()
