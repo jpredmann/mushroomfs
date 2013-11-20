@@ -3,6 +3,8 @@ import time_uuid    #Used to generate unique chunk ids/keys
 import os           #Used to write data out
 import time         #Used to create timestamp for archiving deleted files
 import operator     #Used in a Master 'tester method' (Server.dump_metadata())
+import sys
+import argparse
 
 try:
 	import Pyro.core
@@ -81,16 +83,17 @@ class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
 class MushroomMaster(Pyro.core.ObjBase):
 
     def __init__(self):
-    
-    	self.root = os.path.abspath( root ) + '/'
+		
+		print "I am here"
+		self.root = os.path.abspath( root ) + '/'
 		os.chdir( self.root )
-        self.chunksize = 1048576		# Max size in megabytes of chunks
-        self.chunkrobin = 0				# Index of the next chunk server to use
-        self.file_table = {}			# Look-up table to map from file paths to chunk ids
-        self.chunk_table = {} 			# Look-up table to map chunk id to chunk server
-        self.chunk_server_table = {}	# Look-up table to map chunk servers to chunks held
-        self.chunk_servers = []		# List of registered chunk servers
-        Pyro.core.ObjBase.__init__( self )
+		self.chunksize = 1048576		# Max size in megabytes of chunks
+		self.chunkrobin = 0				# Index of the next chunk server to use
+		self.file_table = {}			# Look-up table to map from file paths to chunk ids
+		self.chunk_table = {} 			# Look-up table to map chunk id to chunk server
+		self.chunk_server_table = {}	# Look-up table to map chunk servers to chunks held
+		self.chunk_servers = []		# List of registered chunk servers
+		Pyro.core.ObjBase.__init__( self )
         
         
     # Make an dictionary of empty lists where keys are chunk servers and values are
@@ -188,7 +191,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         del self.file_table[path]
        
 
-    def register_chunk_server(self, ip_address, port_number)
+    def register_chunk_server(self, ip_address, port_number):
     
     	self.chunk_servers.append( (ip_address, port_number) )
             
@@ -434,26 +437,28 @@ def main():
 
 	# Set default options.
 	hostname = '0.0.0.0'
-	port = DEFAULT_PORT
+	port = 3636
 	foreground = False
 	secure = False
+	mountpoint = "~/server"
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument( 'mount_point', dest=mount_point, help="A directory or mount point must be specified" )
-	parser.add_argument( '-v', '--version', action='store_true', help="Prints version information for the chunk server" )
-	parser.add_argument( '-a', '--address', dest=hostname, help="Used to specify the ip address of the chunk server" )
-	parser.add_argument( '-p', '--port', dest=port, help="User to specify the port the chunk server listens on" )
-	parser.add_argument( '-s', '--secure', action='store_true', dest=foreground, help="Run in secure mode using x509 certificate authentication" )
-	parser.add_argument( '-f', '--foreground', action='store_true', dest=secure, help="Run the chunk server in the foreground" )
+	parser.add_argument( "mountpoint", help="A directory or mount point must be specified" )
+	#parser.add_argument( '-v', '--version', action='store_true', help="Prints version information for the chunk server" )
+	#parser.add_argument( '-a', '--address', dest=hostname, help="Used to specify the ip address of the chunk server" )
+	#parser.add_argument( '-p', '--port', dest=port, help="User to specify the port the chunk server listens on" )
+	#parser.add_argument( '-s', '--secure', action='store_true', dest=foreground, help="Run in secure mode using x509 certificate authentication" )
+	#parser.add_argument( '-f', '--foreground', action='store_true', dest=secure, help="Run the chunk server in the foreground" )
 
-	parser.parse_args()
+	args = parser.parse_args()
+	mountpoint = args.mountpoint
 
 	# Instantiate chunk server
 	try:
-		master_server = MushroomMaster( mount_point )
+		master_server = MushroomMaster( mountpoint )
 	except:
-		print >> sys.stderr, "Error: could not mount " + mount_point
+		print >> sys.stderr, "Error: could not mount " + mountpoint
 		sys.exit(1)
 
 	# Go in deamon-mode.
