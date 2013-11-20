@@ -525,7 +525,7 @@ This class will process all system calls received by the Fuse module
                 	raise error
                 
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     
             if self.file_descriptor < 0:
                 raise OSError( errno.EACCES, "Premission denied: " + self.path )
@@ -564,7 +564,7 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_mastet_server()
                     
 			
         def ftruncate( self, len ):
@@ -584,7 +584,7 @@ This class will process all system calls received by the Fuse module
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return ftrunc_result
@@ -614,14 +614,17 @@ This class will process all system calls received by the Fuse module
                     		chunk_location = client.master_server.get_chunkloc( chunk_name )
                     		ip = chunk_location[0]
                     		port= chunk_location[1]
-                    		client.connect_chunk_server( ip, port )
-                    		data_chunks.append( client.chunk_server.read( chunk_name )
+                    		try:
+                    			client.connect_chunk_server( ip, port )
+                    			data_chunks.append( client.chunk_server.read( chunk_name )
+                    		except:
+                    			client.reconnect_chunk_server()
                     		
                     	data = b"".join( data_chunks )
                         client.lock.release()
                         successful = True
                 except:
-                    client.reconnect()
+                    client.reconnect_master_server()
                     self._reinitialize()
                     
             return data
