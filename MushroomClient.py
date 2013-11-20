@@ -69,7 +69,7 @@ This class will process all system calls received by the Fuse module
         self.lock.acquire()
         
         # TODO: This code and the lock acquire are ugly, needs to be replaced
-        if self.connected:
+        if self.connected_master:
             self.lock.release()
             return
         
@@ -107,7 +107,7 @@ This class will process all system calls received by the Fuse module
         self.lock.acquire()
         
         # TODO: This code and the lock acquire are ugly, needs to be replaced
-        if self.connected:
+        if self.connected_chunk:
             self.lock.release()
             return
         
@@ -149,6 +149,21 @@ This class will process all system calls received by the Fuse module
         self.lock.release()
         
         self.master_server.rebindURI()
+        
+        self.connect_master_server()
+        
+    def reconnect_chunk_server( self ):
+    
+        try:
+            self.lock.release()
+        except:
+            pass
+            
+        self.lock.acquire()
+        self.connected_chunk = False
+        self.lock.release()
+        
+        self.chunk_server.rebindURI()
         
         self.connect_master_server()
         
@@ -238,23 +253,6 @@ This class will process all system calls received by the Fuse module
 				
 		return truncated_file
 		
-	def rename( self, source_path, target_path ):
-	
-	    successful = False
-	
-		while not successful:
-			try:
-			    # TODO: Add calls to chunk servers
-				self.lock.acquire()
-				renamed_file = self.master_server.rename( source_path, target_path )
-				self.lock.release()
-				
-				successful = True
-				
-			except:
-				self.reconnect()
-				
-		return renamed_file
 		
 	def rename( self, source_path, target_path  ):
 	
@@ -509,7 +507,7 @@ This class will process all system calls received by the Fuse module
             
             	try:
                     client.lock.acquire()
-                    self.file_desctriptor = client.master_server.open( path, flags, mode	)
+                    self.file_desctriptor = client.master_server.open( path, flags, mode )
                     self.timestamp =  client.timestamp
                     client.lock.release()
                 
@@ -605,15 +603,16 @@ This class will process all system calls received by the Fuse module
                     else:
                     	data_chunks = []
                     	
-                    	chunk_ids = client.master_server.get_chunk_ids()
-                    	sortec_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
+                    	chunk_ids = client.master_server.get_chunk_ids( self.path )
+                    	sorted_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
                     	
                     	for id in sorted_chunk_ids:
                     	
                     		chunk_name = str( id[0] ) + id[1]
                     		chunk_location = client.master_server.get_chunkloc( chunk_name )
-                    		ip = chunk_location[0]
-                    		port= chunk_location[1]
+                    		location = chunk_location[0]
+                    		ip = location[0]
+                    		port = location[1]
                     		try:
                     			client.connect_chunk_server( ip, port )
                     			data_chunks.append( client.chunk_server.read( chunk_name )
@@ -747,21 +746,6 @@ This class will process all system calls received by the Fuse module
                     
             return flush_result 
 
-		def fsync(self, isfsyncfile):
-			while 1:
-				try:
-					fuse_server.synlock.acquire()
-					if (self.timestamp != fuse_server.timestamp):
-						fuse_server.synlock.release()
-						self._reinitialize()
-						continue
-					ret = fuse_server.server.fsync(self.file_descriptor, isfsyncfile)
-					fuse_server.synlock.release()
-					break
-				except:
-					fuse_server.exception_handler()
-					self._reinitialize()
-			return ret
 			
         def fsync( self, isfsyncfile ):
         
@@ -815,8 +799,8 @@ def main():
 	if (len(sys.argv) > 1):
 		if not (client.fuse_args.getmod('showhelp') or client.fuse_args.getmod('showversion')):
 			# Connect to the Mushroom Master Server.
-			while client.connected == 0:
-				client.connect()
+			while client.connected_master == 0:
+				client.connect_master_server()
 				time.sleep(1)
 	try:
 		# Mount the filesystem.

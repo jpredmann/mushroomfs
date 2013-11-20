@@ -253,7 +253,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 	def release( self, file_descriptor, flags ):
 	
 		try:
-			if fd > 0:
+			if file_desciptor > 0:
 				os.close( file_descriptor )
 				op_result = True
 		except:
