@@ -334,7 +334,7 @@ class MushroomClient(Fuse):
     ### Routine: readdir   ###
     ##########################
         
-    def readdir( self, path ):
+    def readdir( self, path, offset ):
     
         #initialize operation as not successful
         successful = False
@@ -350,7 +350,9 @@ class MushroomClient(Fuse):
                 self.lock.acquire()
                 
                 #call to the master server to perform iterative operations
-                for item in self.master_server.readdir( path ):
+                direntries = ['.', '..']
+                direntries.extend( self.master_server.readdir( path[1:] ) )
+                for item in direntries:
                     #as per FUSE docs use yield 
                     yield fuse.Direntry( item )
                 
