@@ -22,8 +22,18 @@ webpage http://pyro.sourceforge.net.
 """
     sys.exit(1)
 
+
+################################
+### MUSHROOM CERT VALIDATOR  ###
+################################
+
 # Certificate validator class.
 class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
+    
+    
+    ############################
+    ### Class Initialization ###
+    ############################
     def __init__(self):
         if os.path.isfile('authorized-clients'):
             self.cfgfile = 'authorized-clients'
@@ -56,12 +66,24 @@ class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
             raise e
 
         Pyro.protocol.BasicSSLValidator.__init__(self)
+    
+    ###############################
+    ### Routine: MCV.authorize  ###
+    ###############################
 
     def authorize(self, subject):
         return (1, 0)
 
+    ###############################
+    ### Routine: MCV.deny       ###
+    ###############################
+
     def deny(self, subject, code):
         return (0, code)
+            
+    #####################################
+    ### Routine: MCV.checkCertificate ###
+    #####################################
 
     def checkCertificate(self, cert):
     
@@ -85,27 +107,50 @@ class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
             return self.deny(subject, 4)
 
 
+
+###########################
+###   MUSHROOM MASTER   ###
+###########################
+
 class MushroomMaster(Pyro.core.ObjBase):
+    
+    
+    ############################
+    ### Class Initialization ###
+    ############################
 
     def __init__(self, root):
         
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
-        self.chunksize = 1048576        # Max size in megabytes of chunks
-        self.chunkrobin = 0                # Index of the next chunk server to use
+        self.chunksize = 1048576        # Max size of chunks in bytes (1MB)
+        self.chunkrobin = 0             # Index of the next chunk server to use
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
-        self.chunk_table = {}             # Look-up table to map chunk id to chunk server
+        self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
-        self.chunk_servers = []        # List of registered chunk servers
+        self.chunk_servers = []         # List of registered chunk servers
         Pyro.core.ObjBase.__init__( self )
-        
-        
+   
+    
+    ###########################################
+    ### Routine: init_chunk_server_table    ###
+    ###                                     ###
+    ### Used by: N/A                        ###
+    ###########################################
+    
     # Make an dictionary of empty lists where keys are chunk servers and values are
     # a list of chunk ids stored on that chunk server
     def init_chunk_server_table():
     
         for server in self.chunk_servers:
-            self.chunkservertable[ server ] = []
+            self.chunk_server_table[ server ] = []
+
+
+    #####################################
+    ### Routine: get_chunk_servers    ###
+    ###                               ###
+    ### Used by: Client.write_chunks  ###
+    #####################################
             
     # Returns a list of chunk servers considered by the master server to be
     # currently available.  This list get updated by the master server when 
@@ -113,6 +158,13 @@ class MushroomMaster(Pyro.core.ObjBase):
     def get_chunk_servers(self):
     
         return self.chunk_servers
+                
+                
+    ####################################
+    ### Routine: alloc               ###
+    ###                              ###
+    ### Used by: Client.MF.write     ###
+    ####################################
 
     # Returns a list of chunk ids.  Calls an internal chunk allocation method to
     # perform the 'house keeping' tasks with the meta-data tables.
@@ -127,6 +179,13 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table[path] = chunk_ids
         
         return chunk_ids
+                
+                
+    #################################
+    ### Subroutine: alloc_chunks  ###
+    ###                           ###
+    ### Used by: alloc            ###
+    #################################
 
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
@@ -153,6 +212,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             self.chunkrobin = (self.chunkrobin + 1) % len( self.chunk_servers )
             
         return chunk_ids
+                
+                
+    #######################################
+    ### Routine: alloc_append           ###
+    ###                                 ###
+    ### Used by: N/A                    ###
+    #######################################
         
     # Allocation method for appending to a file
     def alloc_append(self, path, num_append_chunks): # append chunks
@@ -165,22 +231,49 @@ class MushroomMaster(Pyro.core.ObjBase):
         chunk_ids.extend(append_chunk_ids)
         
         return append_chunk_ids
+                
+                
+    ######################################
+    ### Routine: get_chunkloc          ###
+    ###                                ###
+    ### Used by: Client.MF.read        ###
+    ######################################
 
     # Get the list of chunk servers that hold the given chunk
     def get_chunkloc(self, chunk_id):
     
         return self.chunk_table[chunk_id]
+                
+                
+    ##############################################
+    ### Routine: get_chunk_ids                 ###
+    ###                                        ###
+    ### Used by: Client.rename, Client.MF.read ###
+    ##############################################
 
     # Get the list of ids of the chunks that compose the given file
     def get_chunk_ids(self, path):
     
         return self.file_table[path]
+                
+                
+    ###############################################
+    ### Routine: exists                         ###
+    ###                                         ###
+    ### Used by: Client.rename, Client.MF.write ###
+    ###############################################
 
     # Determine if the file already exists
     def exists(self, path):
     
         return True if path in self.file_table else False
-
+                
+                
+    ###################################
+    ### Routine: delete             ###
+    ###                             ###
+    ### Used by: N/A                ###
+    ###################################
     
     def delete(self, path): # rename for later garbage collection
     
@@ -193,15 +286,137 @@ class MushroomMaster(Pyro.core.ObjBase):
             del self.chunk_table[id]
         
         del self.file_table[path]
-       
+    
+    
+    ###########################################
+    ### Routine: register_chunk_server      ###
+    ###                                     ###
+    ### Used by: N/A                        ###
+    ###########################################
 
     def register_chunk_server(self, ip_address, port_number):
     
         self.chunk_servers.append( (ip_address, port_number) )
-            
+    
+    
+    
+    """
+    FILE ROUTINES
+    """
+    
+    ####################################
+    ### Routine: ftruncate           ###
+    ###                              ###
+    ### Used by: Client.MF.ftruncate ###
+    ####################################
+    
+    def ftruncate( self, file_descriptor, length ):
+        
+        try:
+            op_result = os.ftruncate( file_descriptor, length )
+        except:
+            op_result = -errno.EACCES
+        
+        return op_result
+    
+    
+    ####################################
+    ### Routine: read                ###
+    ###                              ###
+    ### Used by: Client.MF.read      ###
+    ####################################
+    
+    def read( self, file_descriptor, size, offset ):
+        
+        try:
+            os.lseek( file_descriptor, offset, 0 )
+            op_result = os.read( file_descriptor, size )
+        except:
+            op_result = -errno.EACCES
+        
+        return op_result
+    
+    
+    ####################################
+    ### Routine: write               ###
+    ###                              ###
+    ### Used by: Client.MF.write     ###
+    ####################################
+    
+    def write( self, file_descriptor, buffer, offset ):
+        
+        try:
+            os.lseek( file_descriptor, offset, 0 )
+            os.write( file_descriptor, buffer )
+            op_result = len( buffer )
+        except:
+            op_result -errno.EACCES
+        
+        return op_result
+    
+    
+    ####################################
+    ### Routine: fgetattr            ###
+    ###                              ###
+    ### Used by: Client.MF.fgetattr  ###
+    ####################################
+    
+    def fgetattr( self, file_descriptor ):
+        
+        try:
+            op_result = os.fstat( file_descriptor )
+        except:
+            op_result = -errno.EACCES
+        
+        return op_result
+    
+    
+    ####################################
+    ### Routine: flush               ###
+    ###                              ###
+    ### Used by: Client.MF.flush     ###
+    ####################################
+    
+    def flush( self, file_descriptor ):
+        
+        try:
+            op_result = os.close( os.dup( file_descriptor ) )
+        except:
+            op_result = -errno.EACCES
+        
+        return op_result
+    
+    
+    ####################################
+    ### Routine: fsync               ###
+    ###                              ###
+    ### Used by: Client.MF.fsync     ###
+    ####################################
+    
+    # TODO: determine what should be returned
+    def fsync( self, file_descriptor, isfsyncfile ):
+        
+        try:
+            if isfsyncfile and hasattr(os, 'fdatasync'):
+                os.fdatasync( file_descriptor )
+            else:
+                os.fsync( file_descriptor )
+        except:
+            return -errno.EACCES
+    
+    
+    """
+    FILE SYSTEM ROUTINES
+    """
             
     # Need to implement a replace chunk server method that can be called by Zookeeper
     # the call will provide the ip and port of a replacement chunk server
+    
+    #################################
+    ### Routine: statfs           ###
+    ###                           ###
+    ### Used by: Client.statfs    ###
+    #################################
     
     def statfs( self ):
     
@@ -212,7 +427,12 @@ class MushroomMaster(Pyro.core.ObjBase):
             
         return op_result
 
-
+    
+    #################################
+    ### Routine: getattr          ###
+    ###                           ###
+    ### Used by: Client.getattr   ###
+    #################################
 
     def getattr( self, path ):
     
@@ -222,6 +442,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.ENOENT
             
         return op_result
+    
+    
+    #################################
+    ### Routine: readlink         ###
+    ###                           ###
+    ### Used by: Client.readlink  ###
+    #################################
 
     def readlink( self, path ):
     
@@ -231,6 +458,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.ENOENT
             
         return op_result
+    
+    
+    #################################
+    ### Routine: readdir          ###
+    ###                           ###
+    ### Used by: Client.readdir   ###
+    #################################
 
     def readdir( self, path ):
     
@@ -240,6 +474,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EBADF
             
         return op_result
+    
+    
+    #################################
+    ### Routine: open             ###
+    ###                           ###
+    ### Used by: Client.open      ###
+    #################################
 
     def open( self, path, flags, mode ):
     
@@ -255,6 +496,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result -errno.ENOENT
             
         return op_result
+    
+    
+    #################################
+    ### Routine: release          ###
+    ###                           ###
+    ### Used by: Client.release   ###
+    #################################
 
     # TODO: Determine what if anything should be returned here
     def release( self, file_descriptor, flags ):
@@ -267,66 +515,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result =  -errno.ENOSYS
             
         return op_result
-            
 
-    def ftruncate( self, file_descriptor, length ):
-    
-        try:
-            op_result = os.ftruncate( file_descriptor, length )
-        except:
-            op_result = -errno.EACCES
-            
-        return op_result
 
-    def read( self, file_descriptor, size, offset ):
-    
-        try:
-            os.lseek( file_descriptor, offset, 0 )
-            op_result = os.read( file_descriptor, size )
-        except:
-            op_result = -errno.EACCES
-            
-        return op_result
-
-    def write( self, file_descriptor, buffer, offset ):
-    
-        try:
-            os.lseek( file_descriptor, offset, 0 )
-            os.write( file_descriptor, buffer )
-            op_result = len( buffer )
-        except:
-            op_result -errno.EACCES
-        
-        return op_result
-
-    def fgetattr( self, file_descriptor ):
-    
-        try:
-            op_result = os.fstat( file_descriptor )
-        except:
-            op_result = -errno.EACCES
-            
-        return op_result
-
-    def flush( self, file_descriptor ):
-    
-        try:
-            op_result = os.close( os.dup( file_descriptor ) )
-        except:
-            op_result = -errno.EACCES
-            
-        return op_result
-
-    # TODO: determine what should be returned
-    def fsync( self, file_descriptor, isfsyncfile ):
-    
-        try:
-            if isfsyncfile and hasattr(os, 'fdatasync'):
-                os.fdatasync( file_descriptor )
-            else:
-                os.fsync( file_descriptor )
-        except:
-            return -errno.EACCES
+    ####################################
+    ### Routine: truncate            ###
+    ###                              ###
+    ### Used by: Client.truncate     ###
+    ####################################
 
     # TODO: return issues
     def truncate( self, path, length ):
@@ -338,6 +533,13 @@ class MushroomMaster(Pyro.core.ObjBase):
         except:
             return -errno.EACCES
 
+
+    #################################
+    ### Routine: mkdir            ###
+    ###                           ###
+    ### Used by: Client.mkdir     ###
+    #################################
+
     def mkdir(self, path, mode):
     
         try:
@@ -346,6 +548,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+
+
+    ###################################
+    ### Routine: rmdir              ###
+    ###                             ###
+    ### Used by: Client.rmdir       ###
+    ###################################
 
     def rmdir( self, path ):
     
@@ -356,6 +565,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             
         return op_result
 
+
+    ####################################
+    ### Routine: symlink             ###
+    ###                              ###
+    ### Used by: Client.symlink      ###
+    ####################################
+
     def symlink( self, source_path, target_path ):
     
         try:
@@ -365,6 +581,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             
         return op_result
 
+
+    ##################################
+    ### Routine: link              ###
+    ###                            ###
+    ### Used by: Client.link       ###
+    ##################################
+
     def link( self, source_path, target_path ):
     
         try:
@@ -373,6 +596,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+        
+
+    ####################################
+    ### Routine: unlink              ###
+    ###                              ###
+    ### Used by: Client.unlink       ###
+    ####################################
 
     def unlink( self, path ):
     
@@ -382,6 +612,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+        
+
+    ####################################
+    ### Routine: rename              ###
+    ###                              ###
+    ### Used by: Client.rename       ###
+    ####################################
 
     def rename( self, source_path, target_path ):
     
@@ -391,6 +628,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+        
+
+    ###################################
+    ### Routine: chmod              ###
+    ###                             ###
+    ### Used by: Client.chmod       ###
+    ###################################
 
     def chmod( self, path, mode ):
     
@@ -400,12 +644,26 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+        
+        
+    ###################################
+    ### Routine: chown              ###
+    ###                             ###
+    ### Used by: Client.chown       ###
+    ###################################
 
     def chown(self, path, user, group):
         try:
             return os.chown(self.root + path, user, group)
         except:
             return -errno.EACCES
+
+
+    ###################################
+    ### Routine: mknod              ###
+    ###                             ###
+    ### Used by: Client.mknod       ###
+    ###################################
 
     def mknod( self, path, mode, device ):
     
@@ -416,6 +674,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             
         return op_result
 
+
+    ###################################
+    ### Routine: utime              ###
+    ###                             ###
+    ### Used by: Client.utime       ###
+    ###################################
+
     def utime( self, path, times ):
     
         try:
@@ -424,6 +689,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             op_result = -errno.EACCES
             
         return op_result
+
+
+    ###################################
+    ### Routine: access             ###
+    ###                             ###
+    ### Used by: Client.access      ###
+    ###################################
 
     # TODO: This looks incorrect, look into it
     def access( self, path, mode ):
@@ -435,6 +707,9 @@ class MushroomMaster(Pyro.core.ObjBase):
             return -errno.EACCES
 
 
+#################
+###   MAIN    ###
+#################
     
 # Main program.
 def main():
