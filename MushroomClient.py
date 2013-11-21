@@ -222,10 +222,7 @@ class MushroomClient(Fuse):
         self.lock.release()
 
         #Attempt to rebind to the master server
-        self.chunk_server.rebindURI()
-
-        #call method to connect to the master server again
-        self.connect_chunk_server()
+        self.chunk_server.rebindURI( tries=10, wait=3 )
 
         
     ##########################
@@ -464,24 +461,37 @@ class MushroomClient(Fuse):
                 client.reconnect_master_server()
         
         if chunk_server_list:
-        
+       
+            chunk_server_index = 0
+             
             while not successful_chunk:
             
                 try:
-        
+                    """
                     for index in range( 0, len( chunk_ids ) ):
                         chunk_id = chunk_ids[ index ]
                         chunk_server_index = index % len( chunk_server_list )
-                        chunk_location = chunk_server_list[ index]
+                        chunk_location = chunk_server_list[ chunk_server_index ]
                         ip = chunk_location[0]
                         port = chunk_location[1]
                         client.connect_chunk_server( ip, port )
                         new_chunk_id = ( chunk_id[0], target_path )
                         client.chunk_server.rename( chunk_id, new_chunk_id )
-                        
+                    """
+
+                    while( chunk_ids ):
+                        chunk_id = chunk_ids[0]
+                        chunk_server_index = ( chunk_server_index + 1 ) % len( chunk_server_list )
+                        chunk_location = chunk_server_list[ chunk_server_index ]
+                        ip = chunk_location[0]
+                        port = chunk_location[1]
+                        client.connect_chunk_server( ip, port )
+                        new_chunk_id = ( chunk_id[0], target_path )
+                        client.chunk_server.rename( chunk_id, new_chunk_id ) 
                     successful_chunk = True
                 except:
-                    self.reconnect_chunk_server()
+                    chunk_server_index = (chunk_server_index + 1) % len( chunk_server_list )
+                    self.reconnect_chunk_server( )
 
     
     ##########################
@@ -1056,29 +1066,35 @@ class MushroomClient(Fuse):
                             
                             #contact master & using ID get the location of this chunk
                             chunk_location = client.master_server.get_chunkloc( chunk_name )
+
+                            successful_chunk_read = False
+                            chunk_location_index = 0
+
+                            while not successful_chunk_read:
                             
-                            #master returns a list of servers with that chunk, pick the 1st
-                            location = chunk_location[0]
+                                #master returns a list of servers with that chunk, pick the 1st
+                                location = chunk_location[0]
                             
-                            #chunk server's location is tuple: (ip address, port)
-                            ip = location[0]
-                            port = location[1]
+                                #chunk server's location is tuple: (ip address, port)
+                                ip = location[0]
+                                port = location[1]
                             
-                            #Try3: connect to chunk servers
-                            try:
-                                #Connect to proper chunk server for this chunk
-                                client.connect_chunk_server( ip, port )
+                                #Try3: connect to chunk servers
+                                try:
+                                    #Connect to proper chunk server for this chunk
+                                    client.connect_chunk_server( ip, port )
                                 
-                                #Read the chunk data from chunk server
-                                chunk = client.chunk_server.read( chunk_name )
+                                    #Read the chunk data from chunk server
+                                    chunk = client.chunk_server.read( chunk_name )
                                 
-                                #add this chunk's data to the list
-                                data_chunks.append( chunk )
+                                    #add this chunk's data to the list
+                                    data_chunks.append( chunk )
+                                    successful_chunk_read = True
                             
-                            #In case of chunk server connection failure, reconnect
-                            #TODO: do we need to pass ip,portinto reconnect for it to work?
-                            except:
-                                client.reconnect_chunk_server()
+                                #In case of chunk server connection failure, reconnect
+                                except:
+                                    chunk_location_index = ( chunk_location_index + 1 ) % len( chunk_location )
+                                    client.reconnect_chunk_server()
                         
                         #convert file data into binary data
                         data = b"".join( data_chunks )
@@ -1107,11 +1123,6 @@ class MushroomClient(Fuse):
             #initialize operation as not successful
             successful = False
             
-            #Dictionary that holds chunk labels & servers they are written to
-            #After the client is done this dict is returned to master to update its metadata
-            #TODO i dont think we need this. since we get it from write_chunks
-            write_result = {}
-            
             #continue until we are successful
             while not successful:
             
@@ -1133,8 +1144,9 @@ class MushroomClient(Fuse):
                     else:
                     
                         #if the file already exists on master then overwrite it 
+                        # TODO: wat???? truncate amd delete???
                         if client.master_server.exists():
-                            client.ftruncate( self.path,  )
+                            client.ftruncate( self.path  )
                         
                         #contact master and get the chunk size in bytes
                         chunk_size = client.master_server.get_chunk_size()
@@ -1215,13 +1227,15 @@ class MushroomClient(Fuse):
                             
                             #get the key that associates to that chunk
                             chunk_id = chunk_ids[ index ]
-                            
+
+                            #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
+                            chunk_name = str( chunk_id[0] ) + chunk_id[1]
+
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
                             chunk_server_index = index % len( chunk_server_list )
                             
                             #from list get location of where chunk should go (i.e. which chunkserver)
-                            #TODO: shouldn't we use chunk_server_index here
-                            chunk_location = chunk_server_list[ index]
+                            chunk_location = chunk_server_list[ chunk_server_index ]
                             
                             #Chunk location is a tuple: (ip address, port)
                             ip = chunk_location[0]
@@ -1231,8 +1245,7 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( ip, port )
                             
                             #write that chunk data to the chunk server
-                            #TODO, dont we also have to send a path to chunk server a well
-                            client.chunk_server.write( chunks[ index ] )
+                            client.chunk_server.write( chunks[ index ], chunk_name )
                             
                             #delete that chunk from list (in case of failure: only failed chunks retry)
                             del chunks[ index ]
@@ -1245,6 +1258,7 @@ class MushroomClient(Fuse):
                     
                     #In case of failure due to inactive server, then remove that server from list & try again
                     except:
+                        client.reconnect_chunk_server()
                         del chunk_server_list[ chunk_server_index ]
             
             #return the dict back to write method

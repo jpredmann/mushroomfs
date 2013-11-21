@@ -128,7 +128,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
-        self.chunk_servers = []         # List of registered chunk servers
+        self.chunk_servers = [ ( '0.0.0.0', 3637 ) ]         # List of registered chunk servers
         Pyro.core.ObjBase.__init__( self )
    
     
@@ -156,8 +156,13 @@ class MushroomMaster(Pyro.core.ObjBase):
     # currently available.  This list get updated by the master server when 
     # Zookeeper reports that a chunk server is no longer available.
     def get_chunk_servers(self):
-    
+        
+        self.chunk_severs.append( self.chunk_servers.pop(0) )
         return self.chunk_servers
+
+    def get_chunk_size():
+        
+        return self.chunksize
                 
                 
     ####################################
