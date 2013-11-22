@@ -1123,6 +1123,21 @@ class MushroomClient(Fuse):
 
         def write( self, buff, offset ):
         
+            while 1:
+	        try:
+		    fuse_server.synlock.acquire()
+		    if (self.timestamp != fuse_server.timestamp):
+		        fuse_server.synlock.release()
+		        self._reinitialize()
+		        continue
+	            ret = fuse_server.server.write(self.fd, buf, offset)
+		    fuse_server.synlock.release()
+		    break
+	        except:
+		    fuse_server.exception_handler()
+		    self._reinitialize()
+	    return ret 
+            """
             #initialize operation as not successful
             successful = False
             
@@ -1187,6 +1202,7 @@ class MushroomClient(Fuse):
                     client.reconnect_master_server()        
             #return the length of buffer to FUSE 
             return len( buff )
+            """
 
             
         ######################################
@@ -1452,7 +1468,7 @@ def main():
 
     # Initialize the PyGFS client object.
     client = MushroomClient(version=fuse.__version__, dash_s_do='setsingle')
-    print "In client main, client created"
+    logging.debug( 'In client main, client created' )
     # Add custom options.
     client.parser.add_option(mountopt="host", metavar="HOSTNAME", default="127.0.0.1",
         help="The Mushroom server hostname [default: 127.0.0.1]")
@@ -1471,6 +1487,7 @@ def main():
                 time.sleep(1)
     try:
         # call the MushroomClient's main method to Mount the filesystem.
+        logging.debug( 'ABout to start main')
         client.main()
     except Exception, error:
         # Unmount the filesystem.

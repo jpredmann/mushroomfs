@@ -173,10 +173,16 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Returns a list of chunk ids.  Calls an internal chunk allocation method to
     # perform the 'house keeping' tasks with the meta-data tables.
-    def alloc(self, path, num_chunks): # return ordered chunkuuid list
+    def generate_chunk_ids(self, path, num_chunks): # return ordered chunkuuid list
     
-        # Call to house keeping subroutine
-        chunk_ids = self.alloc_chunks(num_chunks, path)
+        chunk_ids = []                    # List to hold chunk ids
+        # Iterate over the number of chunks the file has been split into
+        for i in range(0, num_chunks):
+        
+            # Generate a new UUID for the current chunk
+            chunkuuid = time_uuid.TimeUUID.with_timestamp( time.time() )
+            # add the new chunk id--consisting of a UUID, path pair, to the chunk id list
+            chunk_ids.append( (chunkuuid, path) )
         
         # Adds file path to the file table, if it was not present already
         # stores, potentially over-writing, a list of chunk ids, where those chunks
@@ -194,30 +200,21 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
-    def alloc_chunks(self, num_chunks, path):
+    def register_chunks(self, actual_writes ):
     
-        chunk_ids = []                    # List to hold chunk ids
-        
+        chunk_ids = actual_writes.keys() 
         # Iterate over the number of chunks the file has been split into
-        for i in range(0, num_chunks):
+        for id in chunk_ids:
         
-            # Generate a new UUID for the current chunk
-            chunkuuid = time_uuid.TimeUUID.with_timestamp( time.time() )
-            # Get the index of the chunk server list that holds the next server to use
-            chunkloc = self.chunkrobin
             # Add entry into the chunk table for the new UUID containing primary server
             # for that chunk (pre-replication).
-            self.chunk_table[chunkuuid] = [ self.chunk_servers[chunkloc] ]
+            uuid = id[0]
+            chunk_location = actual_writes[ id ]
+            self.chunk_table[ uuid ] = [ chunk_location ]
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
-            self.chunk_server_table[ self.chunk_servers[chunkloc] ].append( (chunkuuid, path) ) 
-            # add the new chunk id--consisting of a UUID, path pair, to the chunk id list
-            chunk_ids.append( (chunkuuid, path) )
-            # Update the round-robin to the next chunk server
-            self.chunkrobin = (self.chunkrobin + 1) % len( self.chunk_servers )
+            self.chunk_server_table[ chunkLocation ].append( ( id ) 
             
-        return chunk_ids
-                
                 
     #######################################
     ### Routine: alloc_append           ###
