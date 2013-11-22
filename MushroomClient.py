@@ -55,7 +55,7 @@ class MushroomClient(Fuse):
     ############################
     
     def __init__( self, *args, **kw ):
-    
+        logging.debug( 'in init for Client' )
         # Initialize Fuse object
         Fuse.__init__( self, *args, **kw )
         
@@ -80,7 +80,7 @@ class MushroomClient(Fuse):
     ###############################################
     #TODO: Make parametric to connect to either chunk or master servers
     def connect_master_server( self ):
-        
+        logging.debug( 'in connect master server' )
         # Get a lock to talk to the server, if a client thread is already talking to
         # the server release the lock
         self.lock.acquire()
@@ -126,7 +126,7 @@ class MushroomClient(Fuse):
 
     #TODO: Make parametric to connect to either chunk or master servers
     def connect_chunk_server( self, ip, port ):
-        
+        logging.debug( 'in connect_chunk_server' )
         # Get a lock to talk to the server, if a client thread is already talking to
         # the server release the lock
         self.lock.acquire()
@@ -178,7 +178,7 @@ class MushroomClient(Fuse):
     ##################################################################
                 
     def reconnect_master_server( self ):
-        
+        logging.debug( 'in reconnect_master_server' )
         #release the previous lock
         try:
             self.lock.release()
@@ -208,7 +208,7 @@ class MushroomClient(Fuse):
     ###################################################
         
     def reconnect_chunk_server( self ):
-    
+        logging.debug( 'in reconnect_chunk_server') 
         #release the previous lock
         try:
             self.lock.release()
@@ -233,7 +233,7 @@ class MushroomClient(Fuse):
     ##########################
 
     def statfs( self ):
-    
+        logging.debug( 'in statsfs' )
         #initialize operation as not successful
         successful = False
     
@@ -267,7 +267,7 @@ class MushroomClient(Fuse):
     ##########################
 
     def getattr( self, path ):
-    
+        logging.debug( 'in getattr' )
         #initialize operation as not successful
         successful = False
     
@@ -278,10 +278,11 @@ class MushroomClient(Fuse):
             try:
                 #block all other processes on client
                 self.lock.acquire()
-                
+                logging.debug( 'In getattr path below')
+                logging.debug( path ) 
                 #call to the master server to perform operation
-                attr = self.master_server.getattr( path )
-                
+                attr = self.master_server.getattr( path[1:]  )
+                logging.debug( attr ) 
                 #release the lock
                 self.lock.release()
                 
@@ -302,6 +303,8 @@ class MushroomClient(Fuse):
         
     def readlink( self, path ):
     
+        logging.debug( 'in readlink' )
+        
         #initialize operation as not successful
         successful = False
     
@@ -335,7 +338,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def readdir( self, path, offset ):
-    
+        logging.debug( 'in readdir' ) 
         #initialize operation as not successful
         successful = False
     
@@ -372,6 +375,7 @@ class MushroomClient(Fuse):
     ##########################
 
     def truncate( self, path, length ):
+        logging.debug( 'in truncate' )
     
         #initialize operation as not successful
         successful = False
@@ -408,7 +412,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def rename( self, source_path, target_path  ):
-    
+        logging.debug( 'in rename' )    
         successful = False
         rename_result = {}
         
@@ -450,6 +454,7 @@ class MushroomClient(Fuse):
     ##################################
         
     def rename_chunks( chunk_ids, target_path ):
+        logging.debug( 'in rename_chunks' )    
     
         successful_master = False
         successful_chunk = False
@@ -502,6 +507,7 @@ class MushroomClient(Fuse):
     ##########################
             
     def mkdir( self, path, mode ):
+        logging.debug( 'in mkdir' )    
     
         #initialize operation as not successful
         successful = False
@@ -537,6 +543,7 @@ class MushroomClient(Fuse):
     ##########################
 
     def rmdir( self, path ):
+        logging.debug( 'in rmdir' )    
     
         #initialize operation as not successful
         successful = False
@@ -573,6 +580,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def symlink( self, source_path, target_path ):
+        logging.debug( 'in symlink' )    
     
         #initialize operation as not successful
         successful = False
@@ -607,6 +615,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def link( self, source_path, target_path ):
+        logging.debug( 'in link' )    
     
         #initialize operation as not successful
         successful = False
@@ -641,6 +650,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def unlink( self, path ):
+        logging.debug( 'in unlink' ) 
     
         #initialize operation as not successful
         successful = False
@@ -675,6 +685,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def chmod( self, path, mode ):
+        logging.debug( 'in chmod' )    
     
         #initialize operation as not successful
         successful = False
@@ -709,6 +720,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def chown( self, path, user, group ):
+        logging.debug( 'in chown' )    
     
         #initialize operation as not successful
         successful = False
@@ -743,6 +755,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def mknod( self, path, mode, dev ):
+        logging.debug( 'in mknod' )    
     
         #initialize operation as not successful
         successful = False
@@ -776,6 +789,7 @@ class MushroomClient(Fuse):
     ##########################
         
     def utime( self, path, times ):
+        logging.debug( 'in utime' )    
     
         #initialize operation as not successful
         successful = False
@@ -810,6 +824,7 @@ class MushroomClient(Fuse):
     ##########################
 
     def access( self, path, mode ):
+        logging.debug( 'in access' )    
     
         #initialize operation as not successful
         successful = False
@@ -852,6 +867,7 @@ class MushroomClient(Fuse):
         ############################
     
         def __init__( self, path, flags, *mode ):
+            logging.debug( 'in init for file' )    
         
             #set status for class init as not successful
             successful = False
@@ -903,6 +919,7 @@ class MushroomClient(Fuse):
         ###################################################
                 
         def _reinitialize( self ):
+            logging.debug( 'in reinit' )    
         
             #check to see if this file had a mode param
             if hasattr( self, 'mode' ):
@@ -922,6 +939,7 @@ class MushroomClient(Fuse):
         ######################################
 
         def get_num_chunks( size, chunk_size ):
+            logging.debug( 'in get_num_chunks' )    
         
             # Nmbr of Chunks must be an int so must round any fraction up to next int
             return ( size + chunk_size - 1 ) // chunk_size
@@ -936,6 +954,7 @@ class MushroomClient(Fuse):
         #############################
 
         def release( self, flags ):
+            logging.debug( 'in release' )    
         
             #initialize operation as not successful
             successful = False
@@ -979,6 +998,7 @@ class MushroomClient(Fuse):
         ##############################
             
         def ftruncate( self, len ):
+            logging.debug( 'in ftruncate' )    
         
             #initialize operation as not successful
             successful = False
@@ -1027,6 +1047,7 @@ class MushroomClient(Fuse):
         ##############################
 
         def read( self, size, offset ):
+            logging.debug( 'in read' )    
         
             #initialize operation as not successful
             successful = False
@@ -1121,20 +1142,20 @@ class MushroomClient(Fuse):
         ### Routine: MF.write       ###
         ###############################
 
-        def write( self, buff, offset ):
-        
+        def write( self, buf, offset ):
+            logging.debug( 'In write on client' )       
             while 1:
 	        try:
-		    fuse_server.synlock.acquire()
-		    if (self.timestamp != fuse_server.timestamp):
-		        fuse_server.synlock.release()
+		    client.lock.acquire()
+		    if (self.timestamp != client.timestamp):
+		        client.lock.release()
 		        self._reinitialize()
 		        continue
-	            ret = fuse_server.server.write(self.fd, buf, offset)
-		    fuse_server.synlock.release()
+	            ret = client.master_server.write(self.fd, buf, offset)
+		    client.lock.release()
 		    break
 	        except:
-		    fuse_server.exception_handler()
+		    client.reconnect_master()
 		    self._reinitialize()
 	    return ret 
             """
@@ -1212,6 +1233,7 @@ class MushroomClient(Fuse):
         ######################################
             
         def write_chunks( chunk_ids, buff, chunk_size ):
+            logging.debug( 'in write_chunks' )    
         
             #writing status with master
             successful_master = False
@@ -1296,6 +1318,7 @@ class MushroomClient(Fuse):
         ###############################
 
         def fgetattr( self ):
+            logging.debug( 'in fgetattr' )    
         
             #initialize operation as not successful
             successful = False
@@ -1343,6 +1366,7 @@ class MushroomClient(Fuse):
         ###############################
 
         def flush( self ):
+            logging.debug( 'in flush' )    
         
             #initialize operation as not successful
             successful = False
@@ -1390,6 +1414,7 @@ class MushroomClient(Fuse):
         ###############################
             
         def fsync( self, isfsyncfile ):
+            logging.debug( 'in fsync' )    
         
             #initialize operation as not successful
             successful = False

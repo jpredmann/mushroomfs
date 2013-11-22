@@ -9,7 +9,9 @@ import signal
 import re
 import getopt
 import errno
+import logging
 
+logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
 try:
     import Pyro.core
@@ -213,7 +215,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             self.chunk_table[ uuid ] = [ chunk_location ]
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
-            self.chunk_server_table[ chunkLocation ].append( ( id ) 
+            self.chunk_server_table[ chunkLocation ].append( id ) 
             
                 
     #######################################
@@ -224,7 +226,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         
     # Allocation method for appending to a file
     def alloc_append(self, path, num_append_chunks): # append chunks
-    
+        
         # Get chunk ids for existing chunks in file
         chunk_ids = self.file_table[path]
         # Call to house keeping subroutine to get chunk ids for chunks being appended
@@ -352,7 +354,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             os.write( file_descriptor, buffer )
             op_result = len( buffer )
         except:
-            op_result -errno.EACCES
+            op_result = -errno.EACCES
         
         return op_result
     
@@ -439,7 +441,11 @@ class MushroomMaster(Pyro.core.ObjBase):
     def getattr( self, path ):
     
         try:
-            op_result = os.lstat( self.root + path )
+            #op_result = os.lstat( self.root + path )
+            op_result = os.lstat( self.root + path[1:] )
+            logging.debug( 'Path is' )
+            logging.debug( self.root + path[1:] )
+            logging.debug( op_result )
         except:
             op_result = -errno.ENOENT
             
@@ -490,12 +496,21 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             if mode:
                 op_result = os.open( self.root + path, flags, mode[0] )
+                logging.debug( 'Just opened file with mode' )
+                logging.debug( path )
+                logging.debug( os.stat( self.root + path[1:] ) )
+                logging.debug( self.root + path[1:] )
+                logging.debug( 'Done opening file with mode' )
             else:
-                op_result = os.open( self.root + path, flags )
+                op_result = os.open( self.root + path[1:], flags )
+                logging.debug( path )
+                logging.debug( 'Just opened file no mode' )
+                logging.debug( self.root + path )
+                logging.debug( os.stat( self.root + path ) )
                 
         # if not successful op_result holds the error code        
         except:
-            op_result -errno.ENOENT
+            op_result = -errno.ENOENT
             
         return op_result
     
