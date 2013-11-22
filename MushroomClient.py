@@ -1,8 +1,11 @@
-
+import logging
 import os, sys, threading, time, time_uuid
 from errno import *
 from stat import *
 from operator import itemgetter
+
+logging.basicConfig( filename='mushroom_client.log', level=logging.DEBUG )
+
 
 # Try importing Fuse, generate an error message and exit if it cannot import Fuse
 # Using Fuse-Python 0.2
@@ -143,7 +146,7 @@ class MushroomClient(Fuse):
                 protocol = "PYROLOC://"
                 
             # Get the master server proxy object from Pyro RPC system
-            self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/PyGFS" )
+            self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/MushroomChunk" )
             
             # Check that the returned Pyro proxy object works
             if self.chunk_server.getattr('/'):
@@ -1118,16 +1121,17 @@ class MushroomClient(Fuse):
         ### Routine: MF.write       ###
         ###############################
 
-        def write( self, buffer, offset ):
+        def write( self, buff, offset ):
         
             #initialize operation as not successful
             successful = False
             
             #continue until we are successful
             while not successful:
-            
+                logging.debug( 'In while loop, line 1131' )
                 #Try for connection to master
                 try:
+                    logging.debug( 'In try block, line 1134' )
                     #block all other processes on client
                     client.lock.acquire()
                     
@@ -1142,24 +1146,24 @@ class MushroomClient(Fuse):
                     
                     #Otherwise the file's timestamps do match & therefore:
                     else:
-                    
+                        logging.debug( 'Indise else' )
                         #if the file already exists on master then overwrite it 
                         # TODO: wat???? truncate amd delete???
-                        if client.master_server.exists():
-                            client.ftruncate( self.path  )
+                        #if client.master_server.exists():
+                        #    client.ftruncate( self.path  )
                         
                         #contact master and get the chunk size in bytes
                         chunk_size = client.master_server.get_chunk_size()
-                
+                        logging.debug( 'Got chunks' )
                         #call to subroutine, returns the # of chunks to split data into
-                        num_chunks = client.get_num_chunks( len( buffer), chunk_size )
+                        num_chunks = client.get_num_chunks( len( buff), chunk_size )
                 
                         #contact master to generate a unique id for each chunk
-                        chunk_ids = client.master_server.alloc( self.path, num_chunks )
-                
+                        chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
+                        logging.debug( 'Got chunk ids' )
                         #call to subroutine to write each chunk to the appropriate chunk server
-                        write_result = self.write_chunks( chunk_ids, buffer, chunk_size )
-                
+                        write_result = self.write_chunks( chunk_ids, buff, chunk_size )
+                        logging.debug( 'Wrote chunks' )
                         #then release the lock
                         client.lock.release()
                 
@@ -1168,15 +1172,21 @@ class MushroomClient(Fuse):
             
                 #In case of master connection failure, reconnect & reset timestamps
                 except:
+                    logging.debug( 'Got exception' )
                     client.reconnect_master_server()
                     self._reinitialize()
             
             #After successful write, confirm with master which chunkserver's belong with each ID
-            #TODO write this method in master
-            client.master_server.confirm_write( write_results )
-                        
+            successful_confirm = False
+
+            while not successful_confirm:
+                try:
+                    client.master_server.confirm_write( write_results )
+                    succussful_confirm = True
+                except:
+                    client.reconnect_master_server()        
             #return the length of buffer to FUSE 
-            return len( buffer )
+            return len( buff )
 
             
         ######################################
@@ -1185,7 +1195,7 @@ class MushroomClient(Fuse):
         ### Used by:   MF.write            ###
         ######################################
             
-        def write_chunks( chunk_ids, buffer, chunk_size ):
+        def write_chunks( chunk_ids, buff, chunk_size ):
         
             #writing status with master
             successful_master = False
@@ -1194,7 +1204,7 @@ class MushroomClient(Fuse):
             successful_chunk = False
             
             #splice original data into chunks where size of chunks defined by master
-            chunks = [ buffer[index:index + chunk_size] for index in range(0, len( buffer ), chunk_size ) ]
+            chunks = [ buff[index:index + chunk_size] for index in range(0, len( buff ), chunk_size ) ]
             
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
             actual_writes = {}
@@ -1442,7 +1452,7 @@ def main():
 
     # Initialize the PyGFS client object.
     client = MushroomClient(version=fuse.__version__, dash_s_do='setsingle')
-
+    print "In client main, client created"
     # Add custom options.
     client.parser.add_option(mountopt="host", metavar="HOSTNAME", default="127.0.0.1",
         help="The Mushroom server hostname [default: 127.0.0.1]")

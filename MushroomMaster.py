@@ -202,7 +202,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         for i in range(0, num_chunks):
         
             # Generate a new UUID for the current chunk
-            chunkuuid = uuid.uuid1()
+            chunkuuid = time_uuid.TimeUUID.with_timestamp( time.time() )
             # Get the index of the chunk server list that holds the next server to use
             chunkloc = self.chunkrobin
             # Add entry into the chunk table for the new UUID containing primary server
@@ -271,7 +271,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Determine if the file already exists
     def exists(self, path):
     
-        return True if path in self.file_table else False
+        return os.path.exists( path ) 
                 
                 
     ###################################
