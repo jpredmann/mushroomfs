@@ -1145,19 +1145,19 @@ class MushroomClient(Fuse):
         def write( self, buf, offset ):
             logging.debug( 'In write on client' )       
             while 1:
-	        try:
-		    client.lock.acquire()
-		    if (self.timestamp != client.timestamp):
-		        client.lock.release()
-		        self._reinitialize()
-		        continue
-	            ret = client.master_server.write(self.fd, buf, offset)
-		    client.lock.release()
-		    break
-	        except:
-		    client.reconnect_master()
-		    self._reinitialize()
-	    return ret 
+            try:
+            client.lock.acquire()
+            if (self.timestamp != client.timestamp):
+                client.lock.release()
+                self._reinitialize()
+                continue
+                ret = client.master_server.write(self.file_descriptor, buf, offset)
+            client.lock.release()
+            break
+            except:
+            client.reconnect_master()
+            self._reinitialize()
+        return ret 
             """
             #initialize operation as not successful
             successful = False
