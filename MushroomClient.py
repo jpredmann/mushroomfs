@@ -281,7 +281,8 @@ class MushroomClient(Fuse):
                 logging.debug( 'In getattr path below')
                 logging.debug( path ) 
                 #call to the master server to perform operation
-                attr = self.master_server.getattr( path[1:]  )
+                attr = self.master_server.getattr( path  )
+                logging.debug( 'Attribyes from getattr on master below' )
                 logging.debug( attr ) 
                 #release the lock
                 self.lock.release()
@@ -881,7 +882,7 @@ class MushroomClient(Fuse):
                     client.lock.acquire()
                     
                     #call to the master server to open file on its end
-                    self.file_desctriptor = client.master_server.open( path, flags, mode )
+                    ret = client.master_server.open( path, flags, mode )
                     
                     #Use the client's timestamp for this file's timestamp
                     self.timestamp =  client.timestamp
@@ -892,6 +893,7 @@ class MushroomClient(Fuse):
                     #Set param as this file's class instance var
                     self.path = path
                     self.flags = flags
+                    self.file_descriptor = ret
                     if mode:
                         self.mode = mode[0]
                     
@@ -938,7 +940,7 @@ class MushroomClient(Fuse):
         ### Used by:   MF.write            ###
         ######################################
 
-        def get_num_chunks( size, chunk_size ):
+        def get_num_chunks(self, size, chunk_size ):
             logging.debug( 'in get_num_chunks' )    
         
             # Nmbr of Chunks must be an int so must round any fraction up to next int
@@ -1143,21 +1145,25 @@ class MushroomClient(Fuse):
         ###############################
 
         def write( self, buf, offset ):
+            """ 
             logging.debug( 'In write on client' )       
             while 1:
-            try:
-            client.lock.acquire()
-            if (self.timestamp != client.timestamp):
-                client.lock.release()
-                self._reinitialize()
-                continue
-                ret = client.master_server.write(self.file_descriptor, buf, offset)
-            client.lock.release()
-            break
-            except:
-            client.reconnect_master()
-            self._reinitialize()
-        return ret 
+                try:
+                    client.lock.acquire()
+                    if (self.timestamp != client.timestamp):
+                        client.lock.release()
+                        self._reinitialize()
+                        continue
+                    logging.debug( 'Trying to write to master' )
+                    ret = client.master_server.write(self.file_descriptor, buf, offset)
+                    logging.debug( 'Got back from write' )
+                    logging.debug( ret )
+                    client.lock.release()
+                    break
+                except:
+                    client.reconnect_master_server()
+                    self._reinitialize()
+            return ret 
             """
             #initialize operation as not successful
             successful = False
@@ -1192,16 +1198,19 @@ class MushroomClient(Fuse):
                         chunk_size = client.master_server.get_chunk_size()
                         logging.debug( 'Got chunks' )
                         #call to subroutine, returns the # of chunks to split data into
-                        num_chunks = client.get_num_chunks( len( buff), chunk_size )
+                        num_chunks = self.get_num_chunks( len( buff), chunk_size )
                 
+                        ret = client.master_server.write(self.file_descriptor, buf, offset)
+                        client.lock.release()
+
                         #contact master to generate a unique id for each chunk
-                        chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
+                        #chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
                         logging.debug( 'Got chunk ids' )
                         #call to subroutine to write each chunk to the appropriate chunk server
-                        write_result = self.write_chunks( chunk_ids, buff, chunk_size )
+                        #write_result = self.write_chunks( chunk_ids, buff, chunk_size )
                         logging.debug( 'Wrote chunks' )
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                 
                         #change operation status to successul & exit loop
                         successful = True
@@ -1213,17 +1222,17 @@ class MushroomClient(Fuse):
                     self._reinitialize()
             
             #After successful write, confirm with master which chunkserver's belong with each ID
-            successful_confirm = False
+            #successful_confirm = False
 
-            while not successful_confirm:
-                try:
-                    client.master_server.confirm_write( write_results )
-                    succussful_confirm = True
-                except:
-                    client.reconnect_master_server()        
+            #while not successful_confirm:
+                #try:
+                    #client.master_server.confirm_write( write_results )
+                    #succussful_confirm = True
+                #except:
+                    #client.reconnect_master_server()        
             #return the length of buffer to FUSE 
-            return len( buff )
-            """
+            return len( buf )
+
 
             
         ######################################

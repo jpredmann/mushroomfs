@@ -162,7 +162,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.chunk_severs.append( self.chunk_servers.pop(0) )
         return self.chunk_servers
 
-    def get_chunk_size():
+    def get_chunk_size( self ):
         
         return self.chunksize
                 
