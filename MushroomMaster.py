@@ -10,6 +10,8 @@ import re
 import getopt
 import errno
 import logging
+import pickle
+import base64
 
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
@@ -157,9 +159,10 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Returns a list of chunk servers considered by the master server to be
     # currently available.  This list get updated by the master server when 
     # Zookeeper reports that a chunk server is no longer available.
-    def get_chunk_servers(self):
-        
-        self.chunk_severs.append( self.chunk_servers.pop(0) )
+    def get_chunk_servers( self ):
+        logging.debug( 'in get chunk servers')
+        self.chunk_servers.append( self.chunk_servers.pop(0) )
+        logging.debug( self.chunk_servers )
         return self.chunk_servers
 
     def get_chunk_size( self ):
@@ -183,14 +186,17 @@ class MushroomMaster(Pyro.core.ObjBase):
         
             # Generate a new UUID for the current chunk
             chunkuuid = time_uuid.TimeUUID.with_timestamp( time.time() )
+            path_string = base64.urlsafe_b64encode( path )
             # add the new chunk id--consisting of a UUID, path pair, to the chunk id list
-            chunk_ids.append( (chunkuuid, path) )
+            chunk_ids.append( (chunkuuid, path_string) )
         
         # Adds file path to the file table, if it was not present already
         # stores, potentially over-writing, a list of chunk ids, where those chunks
         # compose the file.
-        self.file_table[path] = chunk_ids
-        
+        #self.file_table[path] = chunk_ids
+        with open( path, 'wb' ) as file:
+            pickle.dump( chunk_ids, file )
+
         return chunk_ids
                 
                 
@@ -258,7 +264,8 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Get the list of ids of the chunks that compose the given file
     def get_chunk_ids(self, path):
     
-        return self.file_table[path]
+        chunk_ids = pickle.load( open( path, 'rb' ) )
+        return chunk_ids
                 
                 
     ###############################################

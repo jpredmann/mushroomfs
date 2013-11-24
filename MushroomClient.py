@@ -63,7 +63,7 @@ class MushroomClient(Fuse):
         Pyro.core.initClient(0)
         
         # Instance Variables
-        self.lock = threading.Lock()    # Used for Locking & Blocking
+        #self.lock = threading.Lock()    # Used for Locking & Blocking
         self.host_master = '127.0.0.1'  # IP for Master
         self.port_master = 3636         # Port for Master
         self.authentication_on = False  # For SSL
@@ -83,11 +83,11 @@ class MushroomClient(Fuse):
         logging.debug( 'in connect master server' )
         # Get a lock to talk to the server, if a client thread is already talking to
         # the server release the lock
-        self.lock.acquire()
+        #self.lock.acquire()
         
         #TODO: This code and the lock acquire are ugly, needs to be replaced
         if self.connected_master:
-            self.lock.release()
+            #self.lock.release()
             return
         
         # Try getting the Pyro proxy object for the Master Server    
@@ -114,7 +114,7 @@ class MushroomClient(Fuse):
             print str(error)
             
         # Release the lock so that other threads can acquire it
-        self.lock.release()
+        #self.lock.release()
     
 
     #############################################################
@@ -129,13 +129,14 @@ class MushroomClient(Fuse):
         logging.debug( 'in connect_chunk_server' )
         # Get a lock to talk to the server, if a client thread is already talking to
         # the server release the lock
-        self.lock.acquire()
-        
+        #self.lock.acquire()
+        logging.debug( 'Acquired lock' ) 
         #TODO: This code and the lock acquire are ugly, needs to be replaced
         if self.connected_chunk:
-            self.lock.release()
+            logging.debug( 'Some how we are connected already' )
+            #self.lock.release()
             return
-        
+        logging.debug( 'not already connected to chunk server') 
         # Try getting the Pyro proxy object for the Master Server    
         try:
         
@@ -144,23 +145,25 @@ class MushroomClient(Fuse):
                 protocol = "PYROLOCSSL://"
             else:
                 protocol = "PYROLOC://"
-                
+            logging.debug( 'Chunk server protocol is')
+            logging.debug( protocol )    
             # Get the master server proxy object from Pyro RPC system
             self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/MushroomChunk" )
-            
+            logging.debug( 'Connected to chunk sever' )
             # Check that the returned Pyro proxy object works
             if self.chunk_server.getattr('/'):
                 self.connected_chunk = True
                 self.timestamp = time.time()
             #TODO finish implementing this raise
             else:
+                logging.debug( 'Got an exception in connect chunk' )
                 raise
                 
         except Exception, error:
             print str(error)
             
         # Release the lock so that other threads can acquire it
-        self.lock.release()
+        #self.lock.release()
 
             
             
@@ -180,6 +183,7 @@ class MushroomClient(Fuse):
     def reconnect_master_server( self ):
         logging.debug( 'in reconnect_master_server' )
         #release the previous lock
+        """
         try:
             self.lock.release()
         except:
@@ -187,12 +191,12 @@ class MushroomClient(Fuse):
         
         #reestablish new lock
         self.lock.acquire()
-
+        """
         #toggle the master connection status to false
         self.connected_master = False
         
         #relese the lock
-        self.lock.release()
+        #self.lock.release()
         
         #Attempt to rebind to the master server
         self.master_server.rebindURI()
@@ -210,6 +214,7 @@ class MushroomClient(Fuse):
     def reconnect_chunk_server( self ):
         logging.debug( 'in reconnect_chunk_server') 
         #release the previous lock
+        """
         try:
             self.lock.release()
         except:
@@ -217,12 +222,12 @@ class MushroomClient(Fuse):
         
         #reestablish new lock
         self.lock.acquire()
-
+        """
         #toggle the chunk connection status to false       
         self.connected_chunk = False
 
         #release the lock
-        self.lock.release()
+        #self.lock.release()
 
         #Attempt to rebind to the master server
         self.chunk_server.rebindURI( tries=10, wait=3 )
@@ -243,13 +248,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 stats = self.master_server.statfs()
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -277,7 +282,7 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 logging.debug( 'In getattr path below')
                 logging.debug( path ) 
                 #call to the master server to perform operation
@@ -285,7 +290,7 @@ class MushroomClient(Fuse):
                 logging.debug( 'Attribyes from getattr on master below' )
                 logging.debug( attr ) 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -315,13 +320,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 link = self.master_server.readlink( path )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -351,7 +356,7 @@ class MushroomClient(Fuse):
                 # TODO: Add calls to chunk servers
                 
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform iterative operations
                 direntries = ['.', '..']
@@ -361,7 +366,7 @@ class MushroomClient(Fuse):
                     yield fuse.Direntry( item )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
             
                 #change operation status to successul & exit loop
                 successful = True
@@ -389,13 +394,13 @@ class MushroomClient(Fuse):
                 # TODO: Add calls to chunk servers
                 
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 truncated_file = self.master_server.truncate( path, length )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -421,9 +426,9 @@ class MushroomClient(Fuse):
         
             try:
             
-                client.lock.acquire()
+                #client.lock.acquire()
                 if( self.timestamp != client.timestamp ):
-                    client.lock.release()
+                    #iclient.lock.release()
                     self._reinitialize()
                 else:
                 
@@ -438,7 +443,7 @@ class MushroomClient(Fuse):
                     else:
                         op_result = -errno.EACCES
                         
-                    client.lock.release()
+                    #client.lock.release()
                     successful = True
             except:
                 client.reconnect_master_server()
@@ -520,13 +525,13 @@ class MushroomClient(Fuse):
             try:
                 
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 dir = self.master_server.mkdir( path, mode )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -557,13 +562,13 @@ class MushroomClient(Fuse):
                 #TODO: Add calls to chunk servers
                 
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 remove_result = self.master_server.rmdir( path )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -592,13 +597,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 symlink_result = self.master_server.symlink( source_path, target_path )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -627,13 +632,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 link_result = self.master_server.link( source_path, target_path )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -662,13 +667,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 unlink_result = self.master_server.unlink( path )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -697,13 +702,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 chmod_result = self.master_server.chmod( path, mode )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -732,13 +737,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 chown_result = self.master_server.chown( path, user, group )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -767,13 +772,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 nod = self.master_server.mknod( path, mode, dev )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -801,13 +806,13 @@ class MushroomClient(Fuse):
             #Try to contact the master
             try:
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 utime_result = self.master_server.utime( path, times )
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -838,13 +843,13 @@ class MushroomClient(Fuse):
                 # TODO: Add calls to chunk servers
                 
                 #block all other processes on client
-                self.lock.acquire()
+                #self.lock.acquire()
                 
                 #call to the master server to perform operation
                 access_result = self.master_server.access( path, mode)
                 
                 #release the lock
-                self.lock.release()
+                #self.lock.release()
                 
                 #change operation status to successul & exit loop
                 successful = True
@@ -879,7 +884,7 @@ class MushroomClient(Fuse):
                 #Try1: to contact the master & Try2: to open file
                 try:
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #call to the master server to open file on its end
                     ret = client.master_server.open( path, flags, mode )
@@ -888,7 +893,7 @@ class MushroomClient(Fuse):
                     self.timestamp =  client.timestamp
                     
                     #release the lock
-                    client.lock.release()
+                    #client.lock.release()
                 
                     #Set param as this file's class instance var
                     self.path = path
@@ -967,13 +972,13 @@ class MushroomClient(Fuse):
                 #Try to contact the master
                 try:
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #and toggle as successful without doing anything else
                         successful = True
@@ -985,7 +990,7 @@ class MushroomClient(Fuse):
                         client.master_server.release( self.file_descriptor, flags )
                         
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #change operation status to successul & exit loop
                         successful = True
@@ -1012,13 +1017,13 @@ class MushroomClient(Fuse):
                 try:
                 
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1030,7 +1035,7 @@ class MushroomClient(Fuse):
                         ftrunc_result = client.master_server.ftrucate( self.file_descriptor, len )
                         
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #change operation status to successul & exit loop
                         successful = True
@@ -1061,13 +1066,13 @@ class MushroomClient(Fuse):
                 try:
                 
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1126,7 +1131,7 @@ class MushroomClient(Fuse):
                         data = b"".join( data_chunks )
                 
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                 
                         #change operation status to successul & exit loop
                         successful = True
@@ -1175,7 +1180,7 @@ class MushroomClient(Fuse):
                 try:
                     logging.debug( 'In try block, line 1134' )
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
@@ -1198,16 +1203,15 @@ class MushroomClient(Fuse):
                         chunk_size = client.master_server.get_chunk_size()
                         logging.debug( 'Got chunks' )
                         #call to subroutine, returns the # of chunks to split data into
-                        num_chunks = self.get_num_chunks( len( buff), chunk_size )
+                        num_chunks = self.get_num_chunks( len( buf), chunk_size )
                 
-                        ret = client.master_server.write(self.file_descriptor, buf, offset)
-                        client.lock.release()
+                        #ret = client.master_server.write(self.file_descriptor, buf, offset)
 
                         #contact master to generate a unique id for each chunk
-                        #chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
+                        chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
                         logging.debug( 'Got chunk ids' )
                         #call to subroutine to write each chunk to the appropriate chunk server
-                        #write_result = self.write_chunks( chunk_ids, buff, chunk_size )
+                        write_result = self.write_chunks( chunk_ids, buf, chunk_size )
                         logging.debug( 'Wrote chunks' )
                         #then release the lock
                         #client.lock.release()
@@ -1226,7 +1230,7 @@ class MushroomClient(Fuse):
 
             #while not successful_confirm:
                 #try:
-                    #client.master_server.confirm_write( write_results )
+                    #client.master_server.register_chunks( write_results )
                     #succussful_confirm = True
                 #except:
                     #client.reconnect_master_server()        
@@ -1241,37 +1245,41 @@ class MushroomClient(Fuse):
         ### Used by:   MF.write            ###
         ######################################
             
-        def write_chunks( chunk_ids, buff, chunk_size ):
-            logging.debug( 'in write_chunks' )    
+        def write_chunks(self, chunk_ids, buf, chunk_size ):
+            logging.debug( 'in write_chunks why no buff' )    
         
             #writing status with master
             successful_master = False
             
             #writing status with chunk servers
+            logging.debug( 'What is buf?' )
+            logging.debug( type( buf) )
             successful_chunk = False
-            
             #splice original data into chunks where size of chunks defined by master
-            chunks = [ buff[index:index + chunk_size] for index in range(0, len( buff ), chunk_size ) ]
-            
+            chunks = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
+            logging.debug( 'Got chunks split up' ) 
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
             actual_writes = {}
-            
+            chunk_server_list = [] 
             #continue until we are successful & done with master
+             
             while not successful_master:
-            
+                
                 #Try for connection to master
                 try:
+                    logging.debug( 'Try to connect to master for chunk servers' )
                     #Get a full list of active chunk servers from the master
                     chunk_server_list = client.master_server.get_chunk_servers()
-                    
                     #finished with master, move to next step
                     successful_master = True
                 
                 #In case of master connection failure then try to reconnect
-                except:
+                except Exception:
+                    logging.debug( 'Exception at get_chunk_servers')
                     client.reconnect_master_server()
-            
+                #logging( 'Got chunk server list' )
             #Next, as long as we have chunk servers then try to write chunks to them
+            
             if chunk_server_list:
             
                 #continue until we are successful & done with writing all chunks
@@ -1280,24 +1288,30 @@ class MushroomClient(Fuse):
                     #Try to write all chunks to the chunk servers using round robin (from list)
                     try:
                         #for each chunk of data
+                        logging.debug( 'Trying to iterate over chunks' )
                         for index in range( 0, len( chunks ) ):
                             
                             #get the key that associates to that chunk
                             chunk_id = chunk_ids[ index ]
-
+                            logging.debug( '\nGot chunk id' )
+                            logging.debug( chunk_id )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
-                            chunk_name = str( chunk_id[0] ) + chunk_id[1]
-
+                            chunk_name = str( chunk_id[0] ) + "--" + chunk_id[1]
+                            logging.debug( '\nGot chunk name' )
+                            logging.debug( chunk_name )
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
                             chunk_server_index = index % len( chunk_server_list )
-                            
+                            logging.debug( '\nGot chunk server index' )
+                            logging.debug( chunk_server_index )
                             #from list get location of where chunk should go (i.e. which chunkserver)
                             chunk_location = chunk_server_list[ chunk_server_index ]
-                            
+                            logging.debug( '\nGot chunk location' )
+                            logging.debug( chunk_location )
                             #Chunk location is a tuple: (ip address, port)
                             ip = chunk_location[0]
                             port = chunk_location[1]
-                            
+                            logging.debug( 'Got ip and port' )
+                             
                             #connect to that chunk server
                             client.connect_chunk_server( ip, port )
                             
@@ -1309,15 +1323,17 @@ class MushroomClient(Fuse):
                             
                             #add the chunk id and its chunk server to the dictionary of actual writes
                             actual_writes[ chunk_id ] = chunk_location
-                        
+                            
                          #finished with writing  
                         successful_chunk = True
                     
                     #In case of failure due to inactive server, then remove that server from list & try again
-                    except:
-                        client.reconnect_chunk_server()
+                    
+                    except Exception, error:
+                        #client.reconnect_chunk_server()
+                        logging.debug( error )
                         del chunk_server_list[ chunk_server_index ]
-            
+             
             #return the dict back to write method
             return actual_writes
                 
@@ -1338,13 +1354,13 @@ class MushroomClient(Fuse):
                 #Try to contact the master (via client)
                 try:
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1356,7 +1372,7 @@ class MushroomClient(Fuse):
                         attr = client.master_server.fgetattr( self.file_descriptor )
                         
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #change operation status to successul & exit loop
                         successful = True
@@ -1387,13 +1403,13 @@ class MushroomClient(Fuse):
                 try:
                 
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                          #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1404,7 +1420,7 @@ class MushroomClient(Fuse):
                         flush_result = client.master_server.flush( self.file_descriptor )
                         
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #change operation status to successul & exit loop
                         successful = True
@@ -1434,13 +1450,13 @@ class MushroomClient(Fuse):
                 #Try to contact the master (via client)
                 try:
                     #block all other processes on client
-                    client.lock.acquire()
+                    #client.lock.acquire()
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1452,7 +1468,7 @@ class MushroomClient(Fuse):
                         fsync_result = client.master_server.fsync( self.file_descriptor, isfsyncfile )
                         
                         #then release the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #change operation status to successul & exit loop
                         successful = True

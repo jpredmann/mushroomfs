@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os, errno, getopt, logging, signal, re, argparse
+
 try:
     import Pyro.core
 except:
@@ -11,7 +12,7 @@ Follow the instruction in the README file to install it, or go the Pyro
 webpage http://pyro.sourceforge.net.
 """
     sys.exit(1)
-
+#logging.basicConfig( filename='mushroom_chunk.log', level=logging.DEBUG )
 # Certificate validator class.
 class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
     def __init__(self):
@@ -78,6 +79,7 @@ class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
 # The chunk server class.
 class MushroomChunk( Pyro.core.ObjBase ):
     def __init__( self, root ):
+        #logging.DEBUG( 'Initialized CHunk Server' )
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
         Pyro.core.ObjBase.__init__( self )
@@ -106,9 +108,9 @@ class MushroomChunk( Pyro.core.ObjBase ):
         try:
             with open( self.root + path, 'w' ) as file:
                 file.write( data )
-            op_result = len( buffer )
+            op_result = len( data )
         except:
-            op_result -errno.EACCES
+            op_result = -errno.EACCES
         
         return op_result
 
@@ -164,6 +166,7 @@ def main():
     # Instantiate chunk server
     try:
         chunk_server = MushroomChunk( mount_point )
+        #logging.DEBUG( 'Mounted dir' )
     except:
         print >> sys.stderr, "Error: could not mount " + mount_point
         sys.exit(1)
