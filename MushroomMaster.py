@@ -12,6 +12,7 @@ import errno
 import logging
 import pickle
 import base64
+import stat
 
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
@@ -133,6 +134,8 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
         self.chunk_servers = [ ( '0.0.0.0', 3637 ) ]         # List of registered chunk servers
+        self.init_chunk_server_table()
+
         Pyro.core.ObjBase.__init__( self )
    
     
@@ -144,7 +147,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     
     # Make an dictionary of empty lists where keys are chunk servers and values are
     # a list of chunk ids stored on that chunk server
-    def init_chunk_server_table():
+    def init_chunk_server_table( self ):
     
         for server in self.chunk_servers:
             self.chunk_server_table[ server ] = []
@@ -178,7 +181,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Returns a list of chunk ids.  Calls an internal chunk allocation method to
     # perform the 'house keeping' tasks with the meta-data tables.
-    def generate_chunk_ids(self, path, num_chunks): # return ordered chunkuuid list
+    def generate_chunk_ids(self, file_descriptor, path, num_chunks): # return ordered chunkuuid list
     
         chunk_ids = []                    # List to hold chunk ids
         # Iterate over the number of chunks the file has been split into
@@ -194,9 +197,11 @@ class MushroomMaster(Pyro.core.ObjBase):
         # stores, potentially over-writing, a list of chunk ids, where those chunks
         # compose the file.
         #self.file_table[path] = chunk_ids
-        with open( path, 'wb' ) as file:
-            pickle.dump( chunk_ids, file )
-
+        #with open( path, 'wb' ) as file:
+            #pickle.dump( chunk_ids, file )
+        
+        chunk_string = pickle.dumps( chunk_ids )
+        os.write( file_descriptor, chunk_string )
         return chunk_ids
                 
                 
@@ -209,19 +214,30 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
     def register_chunks(self, actual_writes ):
-    
+        logging.debug( 'In register_chunks' ) 
         chunk_ids = actual_writes.keys() 
+        logging.debug( 'chunk_ids' )
+        logging.debug( chunk_ids )
         # Iterate over the number of chunks the file has been split into
         for id in chunk_ids:
-        
+            logging.debug( 'In for loop for reister_chunks' )
+            logging.debug( id )
             # Add entry into the chunk table for the new UUID containing primary server
             # for that chunk (pre-replication).
             uuid = id[0]
+            logging.debug( 'UUID in register_chunks' )
+            logging.debug( uuid )
+            logging.debug( 'id' )
+            logging.debug( id )
             chunk_location = actual_writes[ id ]
+            logging.debug( 'chunk_location' )
+            logging.debug( chunk_location )
             self.chunk_table[ uuid ] = [ chunk_location ]
+            logging.debug( 'set chunk table entry' )
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
-            self.chunk_server_table[ chunkLocation ].append( id ) 
+            self.chunk_server_table[ chunk_location ].append( id ) 
+            logging.debug( 'set chunk server table' )
             
                 
     #######################################
@@ -262,9 +278,21 @@ class MushroomMaster(Pyro.core.ObjBase):
     ##############################################
 
     # Get the list of ids of the chunks that compose the given file
-    def get_chunk_ids(self, path):
-    
-        chunk_ids = pickle.load( open( path, 'rb' ) )
+    def get_chunk_ids(self, file_descriptor, path):
+        logging.debug( 'MADE IT TO GET CHUNK IDS' )
+        logging.debug( self.root + path[1:] )
+        mode = os.fstat( file_descriptor )
+        logging.debug( 'Got mode in get chunk ids' )
+        logging.debug( mode )
+        file_size = mode[ stat.ST_SIZE ]
+        logging.debug( 'Got file size' )
+        logging.debug( file_size )
+        chunk_string = os.read( file_descriptor, file_size - 1 )
+        logging.debug( 'Got chunk_ids string' )
+        logging.debug( chunk_string )
+        chunk_ids = pickle.loads( chunk_string )
+        logging.debug( 'Got chunk_ids' )
+        logging.debug( chunk_ids )
         return chunk_ids
                 
                 

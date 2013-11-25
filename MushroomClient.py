@@ -1079,22 +1079,25 @@ class MushroomClient(Fuse):
                     
                     #Otherwise the file's timestamps do match & therefore:
                     else:
-                        
+                        logging.debug( 'In else of read' )
                         #init a list that holds all the chunked data segments
                         data_chunks = []
                         
                         #contact master & get all this file's chunk's IDs
-                        chunk_ids = client.master_server.get_chunk_ids( self.path )
-                        
+                        chunk_ids = client.master_server.get_chunk_ids( self.file_descriptor, self.path )
+                        logging.debug( 'Got chunk ids' )
+                        logging.debug( chunk_ids )
                         #sort the chunk IDS such that they are in order
                         sorted_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
-                        
+                        logging.debug( 'Sorted Chunks' )
+                        logging.debug( sorted_chunk_ids ) 
                         #for every chunk ID for this file
                         for id in sorted_chunk_ids:
-                        
+                            logging.debug( 'In sorted chunks for loop' )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
-                            chunk_name = str( id[0] ) + id[1]
-                            
+                            chunk_name = str( id[0] ) + "--" + id[1]
+                            logging.debug( 'Chunk name is')
+                            logging.debug( chunk_name ) 
                             #contact master & using ID get the location of this chunk
                             chunk_location = client.master_server.get_chunkloc( chunk_name )
 
@@ -1150,29 +1153,9 @@ class MushroomClient(Fuse):
         ###############################
 
         def write( self, buf, offset ):
-            """ 
-            logging.debug( 'In write on client' )       
-            while 1:
-                try:
-                    client.lock.acquire()
-                    if (self.timestamp != client.timestamp):
-                        client.lock.release()
-                        self._reinitialize()
-                        continue
-                    logging.debug( 'Trying to write to master' )
-                    ret = client.master_server.write(self.file_descriptor, buf, offset)
-                    logging.debug( 'Got back from write' )
-                    logging.debug( ret )
-                    client.lock.release()
-                    break
-                except:
-                    client.reconnect_master_server()
-                    self._reinitialize()
-            return ret 
-            """
             #initialize operation as not successful
             successful = False
-            
+            write_result = []
             #continue until we are successful
             while not successful:
                 logging.debug( 'In while loop, line 1131' )
@@ -1198,7 +1181,7 @@ class MushroomClient(Fuse):
                         # TODO: wat???? truncate amd delete???
                         #if client.master_server.exists():
                         #    client.ftruncate( self.path  )
-                        
+                         
                         #contact master and get the chunk size in bytes
                         chunk_size = client.master_server.get_chunk_size()
                         logging.debug( 'Got chunks' )
@@ -1206,16 +1189,16 @@ class MushroomClient(Fuse):
                         num_chunks = self.get_num_chunks( len( buf), chunk_size )
                 
                         #ret = client.master_server.write(self.file_descriptor, buf, offset)
-
+                        
                         #contact master to generate a unique id for each chunk
-                        chunk_ids = client.master_server.generate_chunk_ids( self.path, num_chunks )
+                        chunk_ids = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks )
                         logging.debug( 'Got chunk ids' )
                         #call to subroutine to write each chunk to the appropriate chunk server
                         write_result = self.write_chunks( chunk_ids, buf, chunk_size )
                         logging.debug( 'Wrote chunks' )
                         #then release the lock
                         #client.lock.release()
-                
+                        
                         #change operation status to successul & exit loop
                         successful = True
             
@@ -1226,14 +1209,16 @@ class MushroomClient(Fuse):
                     self._reinitialize()
             
             #After successful write, confirm with master which chunkserver's belong with each ID
-            #successful_confirm = False
+            successful_confirm = False
 
-            #while not successful_confirm:
-                #try:
-                    #client.master_server.register_chunks( write_results )
-                    #succussful_confirm = True
-                #except:
-                    #client.reconnect_master_server()        
+            while not successful_confirm:
+                try:
+                    logging.debug( 'trying to write actual write' )
+                    logging.debug( write_result )
+                    client.master_server.register_chunks( write_result )
+                    successful_confirm = True
+                except:
+                    client.reconnect_master_server()
             #return the length of buffer to FUSE 
             return len( buf )
 
@@ -1322,8 +1307,12 @@ class MushroomClient(Fuse):
                             del chunks[ index ]
                             
                             #add the chunk id and its chunk server to the dictionary of actual writes
+                            logging.debug( 'CHUNK ID AND LOCATION IN write_chunks/actual_writes' )
+                            logging.debug( chunk_id )
+                            logging.debug( chunk_location )
                             actual_writes[ chunk_id ] = chunk_location
-                            
+                            logging.debug( 'Actual Writes dict' )
+                            logging.debug( actual_writes ) 
                          #finished with writing  
                         successful_chunk = True
                     
