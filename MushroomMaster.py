@@ -171,6 +171,18 @@ class MushroomMaster(Pyro.core.ObjBase):
     def get_chunk_size( self ):
         
         return self.chunksize
+
+    #################################
+    ### write_metafile             ###
+    ### USed by: generate_chunkids ###
+    #################################
+    def write_metafile(self, path, chunk_string):
+        f = open(self.root + path, 'w')
+        f.write(chunk_string)
+        f.flush()
+        f.close()
+        #import subprocess
+        #subprocess.call(['echo', " \" " + chunk_string + " \" ", '>', self.root+path[1:]])        
                 
                 
     ####################################
@@ -201,7 +213,13 @@ class MushroomMaster(Pyro.core.ObjBase):
             #pickle.dump( chunk_ids, file )
         
         chunk_string = pickle.dumps( chunk_ids )
+        #ORIGINAL
         os.write( file_descriptor, chunk_string )
+        #EXPERIMENTAL 1
+        #f = open( self.root + path,'w' )
+        #f.write(chunk_string)
+        #EXPERIMENTAL 2
+        #self.write_metafile(path, chunk_string)
         return chunk_ids
                 
                 
@@ -233,11 +251,14 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( 'chunk_location' )
             logging.debug( chunk_location )
             self.chunk_table[ uuid ] = [ chunk_location ]
+            logging.debug('CHUNK TABLES CONTENTS')
+            logging.debug(self.chunk_table)
             logging.debug( 'set chunk table entry' )
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
             self.chunk_server_table[ chunk_location ].append( id ) 
             logging.debug( 'set chunk server table' )
+            logging.debug(self.chunk_server_table)
             
                 
     #######################################
@@ -257,7 +278,17 @@ class MushroomMaster(Pyro.core.ObjBase):
         chunk_ids.extend(append_chunk_ids)
         
         return append_chunk_ids
-                
+
+
+    #######################
+    ### Routine: ping   ###
+    ###                 ###
+    ### TESTING ONLY    ###
+    ### #TODO delete    ###
+    #######################
+    def ping(self):
+        logging.debug('PING-PONG')
+        return "pong"            
                 
     ######################################
     ### Routine: get_chunkloc          ###
@@ -267,7 +298,11 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Get the list of chunk servers that hold the given chunk
     def get_chunkloc(self, chunk_id):
-    
+        logging.debug('CALL TO GET CHUNK LOCATIONS')
+        logging.debug('the key from client is:')
+        logging.debug(chunk_id)
+        logging.debug('the value for the chunk is:')
+        logging.debug(self.chunk_table[chunk_id])    
         return self.chunk_table[chunk_id]
                 
                 
@@ -287,7 +322,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         file_size = mode[ stat.ST_SIZE ]
         logging.debug( 'Got file size' )
         logging.debug( file_size )
-        chunk_string = os.read( file_descriptor, file_size - 1 )
+        chunk_string = os.read( file_descriptor, file_size  )
         logging.debug( 'Got chunk_ids string' )
         logging.debug( chunk_string )
         chunk_ids = pickle.loads( chunk_string )

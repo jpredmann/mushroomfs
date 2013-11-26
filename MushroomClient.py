@@ -65,6 +65,7 @@ class MushroomClient(Fuse):
         # Instance Variables
         #self.lock = threading.Lock()    # Used for Locking & Blocking
         self.host_master = '127.0.0.1'  # IP for Master
+        #self.host_master = '192.168.1.75'
         self.port_master = 3636         # Port for Master
         self.authentication_on = False  # For SSL
         self.connected_master = False   # Connection status for Master
@@ -106,7 +107,10 @@ class MushroomClient(Fuse):
             if self.master_server.getattr('/'):
                 self.connected_master = True
                 self.timestamp = time.time()
-            #TODO finish implementing this raise 
+                #TODO finish implementing this raise
+                #logging.debug('testing connection after connect')
+                #pong = self.master_server.ping()
+                #logging.debug(pong) 
             else:
                 raise
                 
@@ -1087,6 +1091,11 @@ class MushroomClient(Fuse):
                         chunk_ids = client.master_server.get_chunk_ids( self.file_descriptor, self.path )
                         logging.debug( 'Got chunk ids' )
                         logging.debug( chunk_ids )
+                        #logging.debug('PING  MASTER AFTER CALL:')
+                        #client.connected_master = False
+                        #client.connect_master_server()
+                        #pong1 = client.master_server.ping()
+                        #logging.debug(pong1)
                         #sort the chunk IDS such that they are in order
                         sorted_chunk_ids = sorted( chunk_ids, key=itemgetter( 0 ) )
                         logging.debug( 'Sorted Chunks' )
@@ -1098,13 +1107,25 @@ class MushroomClient(Fuse):
                             chunk_name = str( id[0] ) + "--" + id[1]
                             logging.debug( 'Chunk name is')
                             logging.debug( chunk_name ) 
+                            logging.debug('contacting master for chunk locations')
+                            logging.debug('the key for the call is:')
+                            logging.debug(id)
+                            logging.debug('the master is connected:')
+                            logging.debug(client.connected_master)
+                            logging.debug('calling master to connect')
+                            client.connect_master_server()
+                            logging.debug('pinging the master')
+                            pong2 = client.master_server.ping()
+                            logging.debug(pong2)
                             #contact master & using ID get the location of this chunk
-                            chunk_location = client.master_server.get_chunkloc( chunk_name )
-
+                            chunk_location = client.master_server.get_chunkloc( id[0] )
+                            logging.debug('chunk location is:')
+                            logging.debug(chunk_location)
                             successful_chunk_read = False
                             chunk_location_index = 0
 
                             while not successful_chunk_read:
+                                logging.debug('inside the chunk reading while-loop')
                             
                                 #master returns a list of servers with that chunk, pick the 1st
                                 location = chunk_location[0]
@@ -1148,15 +1169,50 @@ class MushroomClient(Fuse):
             return data
             
 
+        ##############################
+        ### Helper function        ###
+        ##############################
+
+        def germinate(self, buf, offset):
+            successful = False
+            #continue until we are successful
+            while not successful:
+                #Try for connection to master
+                try:
+                    #Verify that the time stamps are correct
+                    if( self.timestamp != client.timestamp ):
+                        #And reinit so that timestamp gets updated
+                        self._reinitialize()
+                     
+                    #Otherwise the file's timestamps do match & therefore:
+                    else:
+                        #contact master and get the chunk size in bytes
+                        chunk_size = client.master_server.get_chunk_size()
+
+                        #call to subroutine, returns the # of chunks to split data into
+                        num_chunks = self.get_num_chunks( len( buf), chunk_size )
+  
+                        #contact master to generate a unique id for each chunk
+                        chunk_ids = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks )
+                        successful = True
+                #In case of master connection failure, reconnect & reset timestamps
+                except:
+                    logging.debug( 'Got exception' )
+                    client.reconnect_master_server()
+                    self._reinitialize()
+
+
+
         ###############################
         ### Routine: MF.write       ###
         ###############################
 
         def write( self, buf, offset ):
             #initialize operation as not successful
-            if not client.germinated:
-                client.germinated = True
-                #self.write( buf, offset )
+            #if not client.germinated:
+               #client.germinated = True
+               #self.write( buf, offset )
+               #self.germinate(buf,offset)
             successful = False
             write_result = []
             #continue until we are successful
@@ -1172,7 +1228,7 @@ class MushroomClient(Fuse):
                     if( self.timestamp != client.timestamp ):
                         
                         #if not, then relase the lock
-                        client.lock.release()
+                        #client.lock.release()
                         
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1185,7 +1241,7 @@ class MushroomClient(Fuse):
                         #if client.master_server.exists():
                         #    client.ftruncate( self.path  )
                          
-                        #contact master and get the chunk size in bytes
+                        #contact master and get the chunk size 
                         chunk_size = client.master_server.get_chunk_size()
                         logging.debug( 'Got chunks' )
                         #call to subroutine, returns the # of chunks to split data into
@@ -1524,7 +1580,7 @@ def main():
     if (len(sys.argv) > 1):
         if not (client.fuse_args.getmod('showhelp') or client.fuse_args.getmod('showversion')):
             # Connect to the Mushroom Master Server.
-            while client.connected_master == 0:
+            while client.connected_master == False:
                 client.connect_master_server()
                 time.sleep(1)
     try:
