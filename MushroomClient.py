@@ -70,7 +70,7 @@ class MushroomClient(Fuse):
         self.connected_master = False   # Connection status for Master
         self.connected_chunk = False    # Connection status for Chunk
         self.timestamp = 0              # Timestamp for data syncing
-        
+        self.germinated = False
         
     
     ###############################################
@@ -1154,6 +1154,9 @@ class MushroomClient(Fuse):
 
         def write( self, buf, offset ):
             #initialize operation as not successful
+            if not client.germinated:
+                client.germinated = True
+                #self.write( buf, offset )
             successful = False
             write_result = []
             #continue until we are successful
