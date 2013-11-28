@@ -920,9 +920,9 @@ class MushroomClient(Fuse):
                         for chunk_id in sorted_chunk_ids_list:
                             logging.debug( 'In sorted chunks for loop' )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
-                            uuid = str( chunk_id[0] )
+                            uuid = chunk_id[0]
                             file_path = chunk_id[1]
-                            chunk_name = uuid + "--" + file_path
+                            chunk_name = str( uuid ) + "--" + file_path
                             logging.debug( 'Chunk name is')
                             logging.debug( chunk_name ) 
                             logging.debug('contacting master for chunk locations')
