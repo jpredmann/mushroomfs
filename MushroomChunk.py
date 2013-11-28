@@ -192,7 +192,7 @@ def main():
         Pyro.core.initServer(banner=0)
 
         #get Pyro name server
-        ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
+        ns=ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
         
         if secure:
             daemon = Pyro.core.Daemon(prtcol='PYROSSL', host=hostname, port=port)

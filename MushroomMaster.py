@@ -17,7 +17,7 @@ import stat
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
 try:
-    import Pyro.core
+    import Pyro.core, Pyro.naming
 except:
     print >> sys.stderr, """
 error: Pyro framework doesn't seem to be correctly installed!
@@ -133,7 +133,8 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
-        self.chunk_servers = [ ( '0.0.0.0', 3637 ) ]         # List of registered chunk servers
+        #self.chunk_servers = [ ( '0.0.0.0', 3637 ), ('0.0.0.0', 3638) ]         # List of registered chunk servers
+        self.chunk_servers = ['MushroomChunk' ]
         self.init_chunk_server_table()
 
         Pyro.core.ObjBase.__init__( self )
@@ -368,11 +369,11 @@ class MushroomMaster(Pyro.core.ObjBase):
     ### Used by: N/A                        ###
     ###########################################
 
-    def register_chunk_server(self, ip_address, port_number):
-    
-        self.chunk_servers.append( (ip_address, port_number) )
-    
-    
+    #def register_chunk_server(self, ip_address, port_number):
+        #self.chunk_servers.append( (ip_address, port_number) )
+    def register_chunk_server(self, chunkserver_name):
+        self.chunk_servers.append(chunkserver_name)   
+
     
     """
     FILE ROUTINES
@@ -846,16 +847,24 @@ def main():
         
         # Initialize the Pyro RPC object.
         Pyro.core.initServer(banner=0)
+
+        #find the nameserver
+        ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
         
         if secure:
             daemon = Pyro.core.Daemon(prtcol='PYROSSL', host=hostname, port=port)
             daemon.setNewConnectionValidator(MushroomCertValidator())
         else:
-            daemon = Pyro.core.Daemon(prtcol='PYRO', host=hostname, port=port)
+            #daemon = Pyro.core.Daemon(prtcol='PYRO', host=hostname, port=port)
+            import netifaces
+            ip = netifaces.ifaddresses('eth0')[2][0]['addr']
+            daemon = Pyro.core.Daemon('PYRO',ip)
             
         # Use persistent connection (we don't want to use a Pyro
         # nameserver, to keep the things simple).
-        uri = daemon.connectPersistent(master_server, 'MushroomFS')
+        #uri = daemon.connectPersistent(master_server, 'MushroomFS')
+        daemon.useNameServer(ns)
+        uri = daemon.connect(master_server, 'MushroomFS')
         
         try:
             # Start the daemon.
