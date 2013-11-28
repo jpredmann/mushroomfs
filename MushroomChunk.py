@@ -3,7 +3,7 @@
 import sys, os, errno, getopt, logging, signal, re, argparse
 
 try:
-    import Pyro.core
+    import Pyro.core, Pyro.naming
 except:
     print >> sys.stderr, """
 error: Pyro framework doesn't seem to be correctly installed!
@@ -190,16 +190,23 @@ def main():
         
         # Initialize the Pyro RPC object.
         Pyro.core.initServer(banner=0)
+
+        #get Pyro name server
+        ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
         
         if secure:
             daemon = Pyro.core.Daemon(prtcol='PYROSSL', host=hostname, port=port)
             daemon.setNewConnectionValidator(MushroomCertValidator())
         else:
-            daemon = Pyro.core.Daemon(prtcol='PYRO', host=hostname, port=port)
+            #daemon = Pyro.core.Daemon(prtcol='PYRO', host=hostname, port=port)
+            import netifaces
+            ip = netifaces.ifaddresses('eth0')[2][0]['addr']
+            daemon = Pyro.core.Daemon('PYRO', ip)
+            daemon.useNameServer(ns)
             
         # Use persistent connection (we don't want to use a Pyro
         # nameserver, to keep the things simple).
-        uri = daemon.connectPersistent(chunk_server, 'MushroomChunk')
+        uri = daemon.connect(chunk_server, 'MushroomChunk')
         
         try:
             # Start the daemon.
