@@ -98,10 +98,12 @@ class MushroomClient(Fuse):
             if self.authentication_on:
                 protocol = "PYROLOCSSL://"
             else:
-                protocol = "PYROLOC://"
+                #protocol = "PYROLOC://"
+                protocol = "PYRONAME://192.168.1.22/MushroomFS"
                 
             # Get the master server proxy object from Pyro RPC system
-            self.master_server = Pyro.core.getProxyForURI( protocol + self.host_master + ":" + str(self.port_master) + "/MushroomFS" )
+            # self.master_server = Pyro.core.getProxyForURI( protocol + self.host_master + ":" + str(self.port_master) + "/MushroomFS" )
+            self.master_server = Pyro.core.getProxyForURI( protocol)
             
             # Check that the returned Pyro proxy object works
             if self.master_server.getattr('/'):
@@ -129,7 +131,7 @@ class MushroomClient(Fuse):
     #############################################################
 
     #TODO: Make parametric to connect to either chunk or master servers
-    def connect_chunk_server( self, ip, port ):
+    def connect_chunk_server( self, chunkserver_name):
         logging.debug( 'in connect_chunk_server' )
         # Get a lock to talk to the server, if a client thread is already talking to
         # the server release the lock
@@ -148,12 +150,14 @@ class MushroomClient(Fuse):
             if self.authentication_on:
                 protocol = "PYROLOCSSL://"
             else:
-                protocol = "PYROLOC://"
+                protocol = "PYRONAME://192.168.1.22/" + chunkserver_name
             logging.debug( 'Chunk server protocol is')
-            logging.debug( protocol )    
+            logging.debug( protocol )   
             # Get the master server proxy object from Pyro RPC system
-            self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/MushroomChunk" )
-            logging.debug( 'Connected to chunk sever' )
+            #self.chunk_server = Pyro.core.getProxyForURI( protocol + str( ip ) + ":" + str(port) + "/MushroomChunk" )
+            logging.debug('CONNECTING TO CHUNK SERVER')
+            self.chunk_server = Pyro.core.getProxyForURI( protocol )
+            logging.debug( 'Connected to chunk server' )
             # Check that the returned Pyro proxy object works
             if self.chunk_server.getattr('/'):
                 self.connected_chunk = True
@@ -210,12 +214,12 @@ class MushroomClient(Fuse):
 
 
     ###################################################
-    ### Subroutine: Reconnect Master Server         ###
+    ### Subroutine: Reconnect Chunk Server          ###
     ###                                             ###
     ### Used by:   rename_chunks, MushroomFile.read ###
     ###################################################
         
-    def reconnect_chunk_server( self ):
+    def reconnect_chunk_server( self):
         logging.debug( 'in reconnect_chunk_server') 
         #release the previous lock
         """
@@ -471,7 +475,7 @@ class MushroomClient(Fuse):
         actual_renames = {}
         
         while not successful_master:
-        
+            #refactor for chunk names instead of (ip,port) 
             try:
                 chunk_server_list = client.master_server.get_chunk_servers()
                 successful_master = True
@@ -499,11 +503,13 @@ class MushroomClient(Fuse):
 
                     while( chunk_ids ):
                         chunk_id = chunk_ids[0]
+                        logging.debug('before modolus')
                         chunk_server_index = ( chunk_server_index + 1 ) % len( chunk_server_list )
+                        logging.debug('after modolus')
                         chunk_location = chunk_server_list[ chunk_server_index ]
-                        ip = chunk_location[0]
-                        port = chunk_location[1]
-                        client.connect_chunk_server( ip, port )
+                        #ip = chunk_location[0]
+                        #port = chunk_location[1]
+                        client.connect_chunk_server( chunk_location )
                         new_chunk_id = ( chunk_id[0], target_path )
                         client.chunk_server.rename( chunk_id, new_chunk_id ) 
                     successful_chunk = True
@@ -1131,13 +1137,13 @@ class MushroomClient(Fuse):
                                 location = chunk_location[0]
                             
                                 #chunk server's location is tuple: (ip address, port)
-                                ip = location[0]
-                                port = location[1]
+                                #ip = location[0]
+                                #port = location[1]
                             
                                 #Try3: connect to chunk servers
                                 try:
                                     #Connect to proper chunk server for this chunk
-                                    client.connect_chunk_server( ip, port )
+                                    client.connect_chunk_server( location )
                                 
                                     #Read the chunk data from chunk server
                                     chunk = client.chunk_server.read( chunk_name )
@@ -1344,6 +1350,8 @@ class MushroomClient(Fuse):
                             logging.debug( '\nGot chunk name' )
                             logging.debug( chunk_name )
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
+                            logging.debug('CHUNK SERVER LIST CONTENTS')
+                            logging.debug(chunk_server_list)
                             chunk_server_index = index % len( chunk_server_list )
                             logging.debug( '\nGot chunk server index' )
                             logging.debug( chunk_server_index )
@@ -1352,12 +1360,12 @@ class MushroomClient(Fuse):
                             logging.debug( '\nGot chunk location' )
                             logging.debug( chunk_location )
                             #Chunk location is a tuple: (ip address, port)
-                            ip = chunk_location[0]
-                            port = chunk_location[1]
-                            logging.debug( 'Got ip and port' )
+                            #ip = chunk_location[0]
+                            #name = chunk_location[1]
+                            logging.debug( 'Got ip and name' )
                              
                             #connect to that chunk server
-                            client.connect_chunk_server( ip, port )
+                            client.connect_chunk_server( chunk_location )
                             
                             #write that chunk data to the chunk server
                             client.chunk_server.write( chunks[ index ], chunk_name )
