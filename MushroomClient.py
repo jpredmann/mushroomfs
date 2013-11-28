@@ -1126,10 +1126,14 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             logging.debug( 'Connected to chunk server' )
                             #write that chunk data to the chunk server
-                            client.chunk_server.write( data_chunks_list[ index ], chunk_name )
-                            
+                            client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+                            logging.debug( 'Completed writes to chunk server' )
+                            logging.debug( 'About to delete data_chunk at index: ' )
+                            logging.debug( index )
+                            logging.debug( 'Length of data_chunks_list is: ' )
+                            logging.debug( len( data_chunks_list ) )
                             #delete that chunk from list (in case of failure: only failed chunks retry)
-                            del data_chunks_list[ index ]
+                            del data_chunks_list[ 0 ]
                             
                             #add the chunk id and its chunk server to the dictionary of actual writes
                             logging.debug( 'CHUNK ID AND LOCATION IN write_chunks/actual_writes' )
