@@ -1007,13 +1007,16 @@ class MushroomClient(Fuse):
                          
                         #contact master and get the chunk size 
                         chunk_size = client.master_server.get_chunk_size()
-                        logging.debug( 'Got chunks' )
+                        logging.debug( 'Got chunk size' )
+                        logging.debug( chunk_size )
                         #call to subroutine, returns the # of chunks to split data into
                         num_chunks = self.get_num_chunks( len( buf), chunk_size )
-                
+                        logging.debug( 'Number Chunks' )
+                        logging.debug( num_chunks )
                         #contact master to generate a unique id for each chunk
                         chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks )
                         logging.debug( 'Got chunk ids' )
+                        logging.debug( chunk_ids_list )
                         #call to subroutine to write each chunk to the appropriate chunk server
                         actual_writes = self.write_chunks( chunk_ids_list, buf, chunk_size )
                         logging.debug( 'Wrote chunks' )
@@ -1023,7 +1026,7 @@ class MushroomClient(Fuse):
             
                 #In case of master connection failure, reconnect & reset timestamps
                 except:
-                    logging.debug( 'Got exception' )
+                    logging.debug( 'Got exception while in write()' )
                     client.reconnect_master_server()
                     self._reinitialize()
             
@@ -1035,6 +1038,7 @@ class MushroomClient(Fuse):
                     logging.debug( 'trying to write actual write' )
                     logging.debug( actual_writes )
                     client.master_server.register_chunks( actual_writes )
+                    logging.debug( 'Successfully sent actual writes' )
                     successful_confirm = True
                 except:
                     client.reconnect_master_server()
@@ -1058,6 +1062,8 @@ class MushroomClient(Fuse):
             successful_chunk = False
             #splice original data into chunks where size of chunks defined by master
             data_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
+            logging.debug( 'Data chunks' )
+            logging.debug( data_chunks_list )
             logging.debug( 'Got chunks split up' ) 
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
             actual_writes = {}
@@ -1071,6 +1077,8 @@ class MushroomClient(Fuse):
                     logging.debug( 'Try to connect to master for chunk servers' )
                     #Get a full list of active chunk servers from the master
                     chunk_server_list = client.master_server.get_chunk_servers()
+                    logging.debug( 'Chunk server list' )
+                    logging.debug( chunk_server_list )
                     #finished with master, move to next step
                     successful_master = True
                 
@@ -1090,31 +1098,33 @@ class MushroomClient(Fuse):
                         #for each chunk of data
                         logging.debug( 'Trying to iterate over chunks' )
                         for index in range( 0, len( data_chunks_list ) ):
-                            
+                            logging.debug( 'Index of for look in write chunks: ' )
+                            logging.debug( index )
                             #get the key that associates to that chunk
                             chunk_id = chunk_ids_list[ index ]
-                            logging.debug( '\nGot chunk id' )
+                            logging.debug( 'Got chunk id' )
                             logging.debug( chunk_id )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                             uuid = str( chunk_id[0] )
                             file_path = chunk_id[1]
                             chunk_name = uuid + "--" + file_path
-                            logging.debug( '\nGot chunk name' )
+                            logging.debug( 'Got chunk name' )
                             logging.debug( chunk_name )
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
                             logging.debug('CHUNK SERVER LIST CONTENTS')
                             logging.debug(chunk_server_list)
                             chunk_server_index = index % len( chunk_server_list )
-                            logging.debug( '\nGot chunk server index' )
+                            logging.debug( 'Got chunk server index' )
                             logging.debug( chunk_server_index )
                             #from list get location of where chunk should go (i.e. which chunkserver)
                             chunk_location = chunk_server_list[ chunk_server_index ]
-                            logging.debug( '\nGot chunk location' )
+                            logging.debug( 'Got chunk location' )
                             logging.debug( chunk_location )
-                             
+                            logging.debug( 'Trying to connect to chunk server at location' )
+                            logging.debug( chunk_location ) 
                             #connect to that chunk server
                             client.connect_chunk_server( chunk_location )
-                            
+                            logging.debug( 'Connected to chunk server' )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ index ], chunk_name )
                             
@@ -1134,7 +1144,10 @@ class MushroomClient(Fuse):
                     #In case of failure due to inactive server, then remove that server from list & try again
                     
                     except Exception, error:
+                        logging.debug( 'Got exception in write chunks try actually writing chunks' )
                         logging.debug( error )
+                        logging.debug( 'Removeing chunk server from list' )
+                        logging.debug( chunk_server_list[ chunk_server_index )
                         del chunk_server_list[ chunk_server_index ]
              
             #return the dict back to write method
