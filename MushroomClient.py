@@ -931,7 +931,7 @@ class MushroomClient(Fuse):
                             logging.debug('the master is connected:')
                             logging.debug(client.connected_master)
                             logging.debug('calling master to connect')
-                            client.connect_master_server()
+                            #client.connect_master_server()
                             #contact master & using ID get the location of this chunk
                             chunk_locations_list = client.master_server.get_chunkloc( uuid )
                             logging.debug('chunk location is:')
