@@ -134,7 +134,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
         #self.chunk_servers = [ ( '0.0.0.0', 3637 ), ('0.0.0.0', 3638) ]         # List of registered chunk servers
-        self.chunk_servers = ['MushroomChunk' ]
+        self.chunk_servers = ['MushroomChunkOne', 'MushroomChunkTwo' ]
         self.init_chunk_server_table()
 
         Pyro.core.ObjBase.__init__( self )
