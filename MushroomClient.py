@@ -1147,7 +1147,7 @@ class MushroomClient(Fuse):
                         logging.debug( 'Got exception in write chunks try actually writing chunks' )
                         logging.debug( error )
                         logging.debug( 'Removeing chunk server from list' )
-                        logging.debug( chunk_server_list[ chunk_server_index )
+                        logging.debug( chunk_server_list[ chunk_server_index ] )
                         del chunk_server_list[ chunk_server_index ]
              
             #return the dict back to write method
