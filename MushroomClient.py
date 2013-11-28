@@ -109,9 +109,9 @@ class MushroomClient(Fuse):
     def connect_chunk_server( self, chunkserver_name):
         logging.debug( 'in connect_chunk_server' )
 
-        if self.connected_chunk:
-            logging.debug( 'Some how we are connected already' )
-            return
+        #if self.connected_chunk:
+            #logging.debug( 'Some how we are connected already' )
+            #return
 
         logging.debug( 'not already connected to chunk server') 
         # Try getting the Pyro proxy object for the Master Server    
