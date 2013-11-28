@@ -86,7 +86,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument( 'mount_point', help="A directory or mount point must be specified" )
-    parser.add_argumnet( 'server_name', help="The name used by Pyro to identify this chunk server" )
+    parser.add_argument( 'server_name', help="The name used by Pyro to identify this chunk server" )
 
     args = parser.parse_args()
     mount_point = args.mount_point
