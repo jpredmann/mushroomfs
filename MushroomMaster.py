@@ -567,7 +567,8 @@ class MushroomMaster(Pyro.core.ObjBase):
         # if successful the op_result holds the file descriptor
         try:
             if mode:
-                op_result = os.open( self.root + path, flags, mode[0] )
+                #iop_result = os.open( self.root + path, flags, mode[0] )
+                op_result = os.open( self.root + path, os.O_CREAT|os.O_RDWR, mode[0] )
                 logging.debug( 'Flags' )
                 logging.debug( flags )
                 logging.debug( 'Just opened file with mode' )
