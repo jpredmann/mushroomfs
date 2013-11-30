@@ -214,14 +214,9 @@ class MushroomMaster(Pyro.core.ObjBase):
         #with open( path, 'wb' ) as file:
             #pickle.dump( chunk_ids, file )
         
-        chunk_string = pickle.dumps( chunk_ids )
-        #ORIGINAL
-        os.write( file_descriptor, chunk_string )
-        #EXPERIMENTAL 1
-        #f = open( self.root + path,'w' )
-        #f.write(chunk_string)
-        #EXPERIMENTAL 2
-        #self.write_metafile(path, chunk_string)
+        #chunk_string = pickle.dumps( chunk_ids )
+        #os.write( file_descriptor, chunk_string )
+        self.file_table[ path_string ] = chunk_ids
         return chunk_ids
                 
                 
@@ -324,13 +319,13 @@ class MushroomMaster(Pyro.core.ObjBase):
         file_size = mode[ stat.ST_SIZE ]
         logging.debug( 'Got file size' )
         logging.debug( file_size )
-        chunk_string = os.read( file_descriptor, file_size  )
+        #chunk_string = os.read( file_descriptor, file_size  )
         logging.debug( 'Got chunk_ids string' )
         logging.debug( chunk_string )
         chunk_ids = pickle.loads( chunk_string )
         logging.debug( 'Got chunk_ids' )
         logging.debug( chunk_ids )
-        return chunk_ids
+        return self.file_table[ path ]
                 
                 
     ###############################################
