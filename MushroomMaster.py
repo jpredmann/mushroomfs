@@ -584,7 +584,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         # if not successful op_result holds the error code        
         except:
             op_result = -errno.ENOENT
-            
+        logging.debug( 'about to return from open in master' )    
         return op_result
     
     
