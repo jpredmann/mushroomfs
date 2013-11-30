@@ -908,7 +908,7 @@ class MushroomClient(Fuse):
                         data_chunks_list = []
                         
                         #contact master & get all this file's chunk's IDs
-                        chunk_ids_list = client.master_server.get_chunk_ids( self.path )
+                        chunk_ids_list = client.master_server.get_chunk_ids( self.file_descriptor, self.path )
                         logging.debug( 'Got chunk ids' )
                         logging.debug( chunk_ids_list )
 
