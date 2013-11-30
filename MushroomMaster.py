@@ -530,6 +530,8 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             #op_result = os.lstat( self.root + path )
             logging.debug( 'GETATTR CALLED' )
+            logging.debug( 'about to lstat this path' )
+            logging.debug( self.root + path[1:] )
             op_result = os.lstat( self.root + path[1:] )
             logging.debug( 'Path is' )
             logging.debug( self.root + path[1:] )
