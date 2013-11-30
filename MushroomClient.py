@@ -927,7 +927,7 @@ class MushroomClient(Fuse):
                         previous_num_chunks = self.get_num_chunks( client.last_offset, chunk_size )
                         logging.debug( 'previous_num_chunks' )
                         logging.debug( previous_num_chunks )
-                        num_chunks = self.get_num_chunks( offset, chunk_size )
+                        num_chunks = self.get_num_chunks( size, chunk_size )
                         logging.debug( 'Number Chunks' )
                         logging.debug( num_chunks )
 
