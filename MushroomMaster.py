@@ -215,7 +215,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             #pickle.dump( chunk_ids, file )
         
         #chunk_string = pickle.dumps( chunk_ids )
-        #os.write( file_descriptor, chunk_string )
+        os.write( file_descriptor, "updateing" )
         logging.debug( 'Got to writing to file table' )
         self.file_table[ path ] = chunk_ids
         logging.debug( 'Wrote to file table: ' )
@@ -438,7 +438,9 @@ class MushroomMaster(Pyro.core.ObjBase):
     def fgetattr( self, file_descriptor ):
         
         try:
+            logging.debug( 'In fgetattr, about to call fstat' )
             op_result = os.fstat( file_descriptor )
+            logging.debug( 'in fgetattr, got fstat' )
         except:
             op_result = -errno.EACCES
         
