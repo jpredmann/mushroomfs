@@ -533,6 +533,15 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( 'Path is' )
             logging.debug( self.root + path[1:] )
             logging.debug( op_result )
+            key = self.root + path[1:]
+            if key in self.file_table.keys():
+                file_size = self.file_table[ path + 'size' ]
+                logging.debug( 'Got file size' )
+                logging.debug( file_size )
+                stats_list = list( op_result )
+                stats_list[ stat.ST_SIZE ] = file_size
+                op_result = posix.stat_result( stats_list )
+                
         except:
             op_result = -errno.ENOENT
             
