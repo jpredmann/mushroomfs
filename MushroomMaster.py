@@ -195,7 +195,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Returns a list of chunk ids.  Calls an internal chunk allocation method to
     # perform the 'house keeping' tasks with the meta-data tables.
-    def generate_chunk_ids(self, file_descriptor, path, num_chunks): # return ordered chunkuuid list
+    def generate_chunk_ids(self, file_descriptor, path, num_chunks, file_size ): # return ordered chunkuuid list
     
         chunk_ids = []                    # List to hold chunk ids
         # Iterate over the number of chunks the file has been split into
@@ -218,6 +218,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         os.write( file_descriptor, "updateing" )
         logging.debug( 'Got to writing to file table' )
         self.file_table[ path ] = chunk_ids
+        self.file_table[ path + 'size' ] = file_size
         logging.debug( 'Wrote to file table: ' )
         logging.debug( self.file_table[ path ] )
         return chunk_ids
@@ -435,11 +436,14 @@ class MushroomMaster(Pyro.core.ObjBase):
     ### Used by: Client.MF.fgetattr  ###
     ####################################
     
-    def fgetattr( self, file_descriptor ):
+    def fgetattr( self, file_descriptor, path ):
         
         try:
             logging.debug( 'In fgetattr, about to call fstat' )
             op_result = os.fstat( file_descriptor )
+            file_size = self.file_table[ path + 'size' ]
+            logging.debug( 'Got file size' )
+            logging.debug( file_size )
             logging.debug( 'in fgetattr, got fstat' )
         except:
             op_result = -errno.EACCES

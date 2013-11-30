@@ -1021,7 +1021,7 @@ class MushroomClient(Fuse):
                         logging.debug( 'Number Chunks' )
                         logging.debug( num_chunks )
                         #contact master to generate a unique id for each chunk
-                        chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks )
+                        chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks, len( buf ) )
                         logging.debug( 'Got chunk ids' )
                         logging.debug( chunk_ids_list )
                         #call to subroutine to write each chunk to the appropriate chunk server
@@ -1192,7 +1192,7 @@ class MushroomClient(Fuse):
                         
                         #Tell the master (via client) to perform file operation
                         logging.debug( 'in fgetattr, calling master fgetattr' )
-                        attr = client.master_server.fgetattr( self.file_descriptor )
+                        attr = client.master_server.fgetattr( self.file_descriptor, self.path )
                         logging.debug( 'in fgetattr, got master fstat' )
                         #change operation status to successul & exit loop
                         successful = True
