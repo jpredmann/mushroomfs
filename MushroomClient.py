@@ -739,7 +739,12 @@ class MushroomClient(Fuse):
                     
                     #call to the master server to open file on its end
                     ret = client.master_server.open( path, flags, mode )
-                    
+                    attr = client.master_server.getattr( path )
+                    logging.debug( 'GETATTR RESULT' )
+                    logging.debug( attr )
+                    fattr = client.master_server.getattr( ret, path)
+                    logging.debug( 'FGETATTR' )
+                    logging.debug( fattr )
                     #Use the client's timestamp for this file's timestamp
                     self.timestamp =  client.timestamp
                     
