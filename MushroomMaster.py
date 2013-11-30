@@ -445,7 +445,9 @@ class MushroomMaster(Pyro.core.ObjBase):
             file_size = self.file_table[ path + 'size' ]
             logging.debug( 'Got file size' )
             logging.debug( file_size )
-            op_result[ stat.ST_SIZE ] = file_size
+            #op_result[ stat.ST_SIZE ] = file_size
+            logging.debug( type( op_result ) )
+            logging.debug( op_result )
             logging.debug( 'in fgetattr, got fstat' )
         except:
             op_result = -errno.EACCES
