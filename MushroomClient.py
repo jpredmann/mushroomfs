@@ -1183,7 +1183,7 @@ class MushroomClient(Fuse):
                     
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
-                        
+                        logging.debug( 'in fgetattr, time stamps dont match' )
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
@@ -1191,13 +1191,15 @@ class MushroomClient(Fuse):
                     else:
                         
                         #Tell the master (via client) to perform file operation
+                        logging.debug( 'in fgetattr, calling master fgetattr' )
                         attr = client.master_server.fgetattr( self.file_descriptor )
-                        
+                        logging.debug( 'in fgetattr, got master fstat' )
                         #change operation status to successul & exit loop
                         successful = True
             
                 #In case of connection failure, try to reconnect to master using client
                 except:
+                    logging.debug( 'in fgetattr, got exception' )
                     client.reconnect_master_server()
                     self._reinitialize()
                 
