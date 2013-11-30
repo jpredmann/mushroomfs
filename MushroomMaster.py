@@ -313,18 +313,18 @@ class MushroomMaster(Pyro.core.ObjBase):
     def get_chunk_ids(self, file_descriptor, path):
         logging.debug( 'MADE IT TO GET CHUNK IDS' )
         logging.debug( self.root + path[1:] )
-        mode = os.fstat( file_descriptor )
-        logging.debug( 'Got mode in get chunk ids' )
-        logging.debug( mode )
-        file_size = mode[ stat.ST_SIZE ]
-        logging.debug( 'Got file size' )
-        logging.debug( file_size )
+        #mode = os.fstat( file_descriptor )
+        #logging.debug( 'Got mode in get chunk ids' )
+        #logging.debug( mode )
+        #file_size = mode[ stat.ST_SIZE ]
+        #logging.debug( 'Got file size' )
+        #logging.debug( file_size )
         #chunk_string = os.read( file_descriptor, file_size  )
-        logging.debug( 'Got chunk_ids string' )
-        logging.debug( chunk_string )
-        chunk_ids = pickle.loads( chunk_string )
-        logging.debug( 'Got chunk_ids' )
-        logging.debug( chunk_ids )
+        #logging.debug( 'Got chunk_ids string' )
+        #logging.debug( chunk_string )
+        #chunk_ids = pickle.loads( chunk_string )
+        #logging.debug( 'Got chunk_ids' )
+        #logging.debug( chunk_ids )
         return self.file_table[ path ]
                 
                 
