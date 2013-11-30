@@ -897,8 +897,8 @@ class MushroomClient(Fuse):
                 try:
                 
                     #Verify that the file's timestamp is valid
-                    if( self.timestamp != client.timestamp ):
-                        
+                    #if( self.timestamp != client.timestamp ):
+                    if( False ):    
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
@@ -1017,8 +1017,8 @@ class MushroomClient(Fuse):
                     logging.debug( 'In try block, of write' )
                     
                     #Verify that the file's timestamp is valid
-                    if( self.timestamp != client.timestamp ):
-                        
+                    #if( self.timestamp != client.timestamp ):
+                    if( False ):    
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
@@ -1199,7 +1199,8 @@ class MushroomClient(Fuse):
                 try:
                     
                     #Verify that the file's timestamp is valid
-                    if( self.timestamp != client.timestamp ):
+                    #if( self.timestamp != client.timestamp ):
+                    if( False ):
                         logging.debug( 'in fgetattr, time stamps dont match' )
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
@@ -1241,8 +1242,8 @@ class MushroomClient(Fuse):
                 try:
                 
                     #Verify that the file's timestamp is valid
-                    if( self.timestamp != client.timestamp ):
-                        
+                    #if( self.timestamp != client.timestamp ):
+                    if( False ):    
                          #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
@@ -1280,8 +1281,8 @@ class MushroomClient(Fuse):
                 try:
                     
                     #Verify that the file's timestamp is valid
-                    if( self.timestamp != client.timestamp ):
-                        
+                    #if( self.timestamp != client.timestamp ):
+                    if( False ):    
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
