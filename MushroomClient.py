@@ -887,7 +887,8 @@ class MushroomClient(Fuse):
 
         def read( self, size, offset ):
             logging.debug( 'in read' )    
-        
+            logging.debug( 'OFFSET' )
+            logging.debug( offset )        
             #initialize operation as not successful
             successful = False
             
