@@ -940,6 +940,7 @@ class MushroomClient(Fuse):
                             logging.debug( chunk_id )
                             logging.debug( 'CHUNK COUNTER' )
                             logging.debug( client.chunk_counter )
+                            client.chunk_counter = client.chunk_counter + 1
                             logging.debug( 'In sorted chunks for loop' )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                             uuid = chunk_id[0]
