@@ -606,7 +606,7 @@ class MushroomMaster(Pyro.core.ObjBase):
                 logging.debug( self.root + path[1:] )
                 logging.debug( 'Done opening file with mode' )
             else:
-                op_result = os.open( self.root + path[1:], flags )
+                op_result = os.open( self.root + path[1:], os.O_CREAT|os.O_RDWR )
                 if key not in self.file_table.keys():
                     self.file_table[ path ] = []
                     self.file_table[ path + 'size' ] = 0
