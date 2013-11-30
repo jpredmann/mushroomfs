@@ -904,7 +904,6 @@ class MushroomClient(Fuse):
                     
                     #Otherwise the file's timestamps do match & therefore:
                     else:
-                        client.last_offset = client.last_offset + offset
                         logging.debug( 'In else of read' )
                         #init a list that holds all the chunked data segments
                         data_chunks_list = []
@@ -922,12 +921,17 @@ class MushroomClient(Fuse):
                         chunk_size = client.master_server.get_chunk_size()
                         logging.debug( 'Got chunk size' )
                         logging.debug( chunk_size )
+                        logging.debug( 'last offset' )
+                        logging.debug( client.last_offset )
                         #call to subroutine, returns the # of chunks to split data into
                         previous_num_chunks = self.get_num_chunks( client.last_offset, chunk_size )
+                        logging.debug( 'previous_num_chunks' )
+                        logging.debug( previous_num_chunks )
                         num_chunks = self.get_num_chunks( offset, chunk_size )
                         logging.debug( 'Number Chunks' )
                         logging.debug( num_chunks )
 
+                        client.last_offset = client.last_offset + offset
 
                         #for every chunk ID for this file
                         for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks]:
