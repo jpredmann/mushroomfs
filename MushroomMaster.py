@@ -221,7 +221,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table[ path + 'size' ] = file_size
         logging.debug( 'File size in gen chunks' )
         logging.debug( file_size )
-        logging.debug( self.file_table[ path + 'size' ]
+        logging.debug( self.file_table[ path + 'size' ] )
         logging.debug( 'Wrote to file table: ' )
         logging.debug( self.file_table[ path ] )
         return chunk_ids
