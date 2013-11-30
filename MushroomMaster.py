@@ -219,7 +219,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         os.write( file_descriptor, "updateing" )
         logging.debug( 'Got to writing to file table' )
         self.file_table[ path ] = chunk_ids
-        self.file_table[ path + 'size' ] = file_size
+        self.file_table[ path + 'size' ] = self.file_table[ path +'size' ] + file_size
         logging.debug( 'File size in gen chunks' )
         logging.debug( file_size )
         logging.debug( self.file_table[ path + 'size' ] )
@@ -586,7 +586,7 @@ class MushroomMaster(Pyro.core.ObjBase):
                 #iop_result = os.open( self.root + path, flags, mode[0] )
                 op_result = os.open( self.root + path[1:], os.O_CREAT|os.O_RDWR, mode[0] )
                 if key not in self.file_table.keys():
-                    self.file_table[ path + 'size' ] = 26
+                    self.file_table[ path + 'size' ] = 0
                 logging.debug( 'Flags' )
                 logging.debug( flags )
                 logging.debug( 'Just opened file with mode' )
@@ -597,7 +597,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             else:
                 op_result = os.open( self.root + path[1:], flags )
                 if key not in self.file_table.keys():
-                    self.file_table[ path + 'size' ] = 26
+                    self.file_table[ path + 'size' ] = 0
                 logging.debug( path )
                 logging.debug( 'Just opened file no mode' )
                 logging.debug( self.root + path )
