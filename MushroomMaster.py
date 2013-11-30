@@ -216,7 +216,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         
         #chunk_string = pickle.dumps( chunk_ids )
         #os.write( file_descriptor, chunk_string )
-        self.file_table[ path_string ] = chunk_ids
+        self.file_table[ path ] = chunk_ids
         return chunk_ids
                 
                 
@@ -310,7 +310,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     ##############################################
 
     # Get the list of ids of the chunks that compose the given file
-    def get_chunk_ids(self, file_descriptor, path):
+    def get_chunk_ids(self, path):
         logging.debug( 'MADE IT TO GET CHUNK IDS' )
         logging.debug( self.root + path[1:] )
         #mode = os.fstat( file_descriptor )
