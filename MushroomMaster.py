@@ -441,6 +441,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             logging.debug( 'In fgetattr, about to call fstat' )
             op_result = os.fstat( file_descriptor )
+            logging.debug( 'Got fstat' )
             file_size = self.file_table[ path + 'size' ]
             logging.debug( 'Got file size' )
             logging.debug( file_size )
