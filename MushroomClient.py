@@ -1068,7 +1068,7 @@ class MushroomClient(Fuse):
                 try:
                     logging.debug( 'trying to write actual write' )
                     logging.debug( actual_writes )
-                    client.master_server.register_chunks( actual_writes )
+                    client.master_server.register_chunks( actual_writes, self.path )
                     logging.debug( 'Successfully sent actual writes' )
                     successful_confirm = True
                 except:

@@ -236,7 +236,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
-    def register_chunks(self, actual_writes ):
+    def register_chunks(self, actual_writes, path ):
         logging.debug( 'In register_chunks' ) 
         chunk_ids = actual_writes.keys() 
         logging.debug( 'chunk_ids' )
@@ -264,7 +264,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             self.chunk_server_table[ chunk_location ].append( id ) 
             logging.debug( 'set chunk server table' )
             logging.debug(self.chunk_server_table)
-            
+        self.file_table[ path + 'size' ] = 4096 * len( self.file_table[ path ] )    
                 
     #######################################
     ### Routine: alloc_append           ###
