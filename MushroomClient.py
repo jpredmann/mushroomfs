@@ -742,7 +742,7 @@ class MushroomClient(Fuse):
                     attr = client.master_server.getattr( path )
                     logging.debug( 'GETATTR RESULT' )
                     logging.debug( attr )
-                    fattr = client.master_server.getattr( ret, path)
+                    fattr = client.master_server.fgetattr( ret, path)
                     logging.debug( 'FGETATTR' )
                     logging.debug( fattr )
                     #Use the client's timestamp for this file's timestamp
