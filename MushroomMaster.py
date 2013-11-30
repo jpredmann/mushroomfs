@@ -216,7 +216,10 @@ class MushroomMaster(Pyro.core.ObjBase):
         
         #chunk_string = pickle.dumps( chunk_ids )
         #os.write( file_descriptor, chunk_string )
+        logging.debug( 'Got to writing to file table' )
         self.file_table[ path ] = chunk_ids
+        logging.debug( 'Wrote to file table: ' )
+        logging.debug( self.file_table[ path ] )
         return chunk_ids
                 
                 
