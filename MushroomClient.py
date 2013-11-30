@@ -67,7 +67,7 @@ class MushroomClient(Fuse):
         self.connected_chunk = False    # Connection status for Chunk
         self.timestamp = 0              # Timestamp for data syncing
         self.last_offset = 0 
-    
+        self.chunk_counter = 0 
     ###############################################
     ### Subroutine: Connect Master Server       ###
     ###                                         ###
@@ -832,6 +832,7 @@ class MushroomClient(Fuse):
                         #Tell the master (via client) to release the file
                         client.master_server.release( self.file_descriptor, flags )
                         client.last_offset = 0
+                        client.chunk_counter = 0
                         #change operation status to successul & exit loop
                         successful = True
             
@@ -935,6 +936,10 @@ class MushroomClient(Fuse):
 
                         #for every chunk ID for this file
                         for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks]:
+                            logging.debug( 'CHUNK ID FOR LOOP' )
+                            logging.debug( chunk_id )
+                            logging.debug( 'CHUNK COUNTER' )
+                            logging.debug( client.chunk_counter )
                             logging.debug( 'In sorted chunks for loop' )
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                             uuid = chunk_id[0]
