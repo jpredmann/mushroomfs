@@ -573,7 +573,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             if mode:
                 #iop_result = os.open( self.root + path, flags, mode[0] )
-                op_result = os.open( self.root + path, os.O_CREAT|os.O_RDWR, mode[0] )
+                op_result = os.open( self.root + path[1:], os.O_CREAT|os.O_RDWR, mode[0] )
                 logging.debug( 'Flags' )
                 logging.debug( flags )
                 logging.debug( 'Just opened file with mode' )
