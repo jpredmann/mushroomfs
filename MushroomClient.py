@@ -944,14 +944,16 @@ class MushroomClient(Fuse):
                             
                                 #master returns a list of servers with that chunk, pick the 1st
                                 chunk_location = chunk_locations_list[0]
-                            
+                                logging.debug( 'in read, using chunk location: ' )
+                                logging.debug( chunk_location )
                                 #Try3: connect to chunk servers
                                 try:
                                     #Connect to proper chunk server for this chunk
                                     client.connect_chunk_server( chunk_location )
-                                
+                                    logging.debug( 'in read connected to chunk server' ) 
                                     #Read the chunk data from chunk server
                                     data_chunk = client.chunk_server.read( chunk_name )
+                                    logging.debug( 'in read, read chunk from server'
                                 
                                     #add this chunk's data to the list
                                     data_chunks_list.append( data_chunk )
