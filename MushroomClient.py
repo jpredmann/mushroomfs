@@ -954,9 +954,12 @@ class MushroomClient(Fuse):
                                     #Read the chunk data from chunk server
                                     data_chunk = client.chunk_server.read( chunk_name )
                                     logging.debug( 'in read, read chunk from server' )
-                                
+                                    logging.debug( 'chunk data' )
+                                    logging.debug( data_chunk ) 
                                     #add this chunk's data to the list
                                     data_chunks_list.append( data_chunk )
+                                    logging.debug( 'in read, appended to chunks list' )
+                                    logging.debug( data_chunks_list )
                                     successful_chunk_read = True
                             
                                 #In case of chunk server connection failure, reconnect
@@ -966,6 +969,8 @@ class MushroomClient(Fuse):
                         
                         #convert file data into binary data
                         data = b"".join( data_chunks_list )
+                        logging.debug( 'Joined dat in read' )
+                        logging.debug( data )
                 
                         #change operation status to successul & exit loop
                         successful = True
