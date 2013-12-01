@@ -165,7 +165,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         os.unlink( self.root + path )
 
 
-    def rename_chunks( source_dict, target_dict, source_path, target_path ):
+    def rename_chunks( self, source_dict, target_dict, source_path, target_path ):
 
         logging.debug( 'RENAME_CHUNKS' ) 
         for chunk_server in zip( source_dict.keys(), target_dict.keys() ):
