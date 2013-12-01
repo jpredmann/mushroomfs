@@ -187,7 +187,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table[ target_path + 'size' ] = self.file_table[ source_path + 'size' ]
         del self.file_table[ path ]
         del self.file_table[ path + 'size' ]
-        os.unlink( self.root + path )
+        os.rename( self.root + source_path, self.root + target_path )
 
                 
     #######################################
