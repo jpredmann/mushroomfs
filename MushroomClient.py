@@ -1,4 +1,5 @@
 import logging
+import base64
 import os, sys, threading, time, time_uuid
 from errno import *
 from stat import *
