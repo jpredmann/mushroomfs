@@ -372,8 +372,15 @@ class MushroomClient(Fuse):
                         #Connect to proper chunk server for this chunk
                         #Read the chunk data from chunk server
                         for chunk_location in source_dict.keys():
+                            logging.debug( 'connecting to chunk server' )
                             self.connect_chunk_server( chunk_location )
+                            logging.debug( 'connected to chunk sevrer' )
+                            logging.debug( 'sending source' )
+                            logging.debug( source_dict[ chunk_location ] )
+                            logging.debug( 'sending target' )
+                            logging.debug( target_dict[ chunk_location ] )
                             self.chunk_server.rename( source_dict[ chunk_location ], target_dict[ chunk_location ]  )
+                            logging.debug( 'renamed on chunk servers' )
                         successful_chunk_rename = True
                             
                     #In case of chunk server connection failure, reconnect
