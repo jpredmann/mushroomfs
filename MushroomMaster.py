@@ -264,7 +264,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             self.chunk_server_table[ chunk_location ].append( id ) 
             logging.debug( 'set chunk server table' )
             logging.debug(self.chunk_server_table)
-        self.file_table[ path + 'size' ] = 4096 * len( self.file_table[ path ] )    
+        #self.file_table[ path + 'size' ] = 4096 * len( self.file_table[ path ] )    
                 
     #######################################
     ### Routine: alloc_append           ###
