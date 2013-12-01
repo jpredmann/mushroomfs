@@ -79,6 +79,16 @@ class MushroomChunk( Pyro.core.ObjBase ):
         except:
             return -errno.EACCES
 
+    def delete( delete_list ):
+        
+        try:
+        
+            for chunk_name in delete_list:
+                os.unlink( self.root + chunk_name )
+        except:
+            return -errno.EACCES
+        
+
 # Main program.
 def main():
 

@@ -67,7 +67,6 @@ class MushroomClient(Fuse):
         self.connected_chunk = False    # Connection status for Chunk
         self.timestamp = 0              # Timestamp for data syncing
         self.last_offset = 0 
-        self.chunk_counter = 0 
     ###############################################
     ### Subroutine: Connect Master Server       ###
     ###                                         ###
@@ -543,26 +542,61 @@ class MushroomClient(Fuse):
     
         #initialize operation as not successful
         successful = False
-    
+            
         #continue until we are successful
         while not successful:
             
-            #Try to contact the master
+            #Try1: connect master, Try2: open file
             try:
-                
-                #call to the master server to perform operation
-                unlink_result = self.master_server.unlink( path )
-                
+                    
+                #contact master & get all this file's chunk's IDs
+                chunk_ids_list = self.master_server.get_chunk_ids( path )
+                delete_dict = {}
+                #for every chunk ID for this file
+                for chunk_id in chunk_ids_list: 
+                    #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
+                    uuid = chunk_id[0]
+                    file_path = chunk_id[1]
+                    chunk_name = str( uuid ) + "--" + file_path
+                    #contact master & using ID get the location of this chunk
+                    chunk_locations_list = self.master_server.get_chunkloc( uuid )
+                    for chunk_location in chunk_locations_list:
+                        if chunk_location not in delete_dict.keys():
+                            delete_dict[ chunk_location ] = [ chunk_name ]
+                        else:
+                            delete_dict[ chunk_location ].extend( chunk_name )
+
+ 
+                    successful_chunk_delete = False
+
+                    while not successful_chunk_delete:
+                            
+                        #Try3: connect to chunk servers
+                        try:
+                            #Connect to proper chunk server for this chunk
+                            self.connect_chunk_server( chunk_location )
+                            #Read the chunk data from chunk server
+                            for chunk_location in delete_dict.keys():
+                                self.chunk_server.delete( delete_dict[ chunk_location ]  )
+
+                            successful_chunk_read = True
+                            
+                        #In case of chunk server connection failure, reconnect
+                        except:
+                            logging.debug( 'EXCEPTION READ CHUNK SERVER' )
+                            self.reconnect_chunk_server()
+                        
                 #change operation status to successul & exit loop
                 successful = True
             
-            #if master is unavailable then try to reconnect
+            #In case of master connection failure, reconnect & reset timestamps
             except:
-                logging.debug( 'EXCEPTION UNLINK' )
-                self.reconnect_master_server()
-            
-        #return the master's resultant to FUSE
-        return unlink_result
+                logging.debug( 'EXCEPTION READ' )
+                client.reconnect_master_server()
+                self._reinitialize()
+                
+        #return the read binary data to FUSE
+        return None
         
 
     ##########################
@@ -817,7 +851,6 @@ class MushroomClient(Fuse):
         def release( self, flags ):
             logging.debug( 'RELEASE' )    
             client.last_offset = 0
-            client.chunk_counter = 0
         
             #initialize operation as not successful
             successful = False
@@ -915,7 +948,7 @@ class MushroomClient(Fuse):
                         data_chunks_list = []
                         
                         #contact master & get all this file's chunk's IDs
-                        chunk_ids_list = client.master_server.get_chunk_ids( self.file_descriptor, self.path )
+                        chunk_ids_list = client.master_server.get_chunk_ids( self.path )
 
                         #sort the chunk IDS such that they are in order
                         sorted_chunk_ids_list = sorted( chunk_ids_list, key=itemgetter( 0 ) )
@@ -928,7 +961,6 @@ class MushroomClient(Fuse):
 
                         #for every chunk ID for this file
                         for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks+previous_num_chunks]:
-                            client.chunk_counter = client.chunk_counter + 1
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                             uuid = chunk_id[0]
                             file_path = chunk_id[1]
