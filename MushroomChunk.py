@@ -52,10 +52,11 @@ class MushroomChunk( Pyro.core.ObjBase ):
         return op_result
 
 
-    def rename( self, source_path, target_path ):
+    def rename( self, source_list, target_list ):
     
         try:
-            op_result = os.rename( self.root + source_path, self.root + target_path )
+            for source_path, target_path in zip( source_list, target_list ):
+                op_result = os.rename( self.root + source_path, self.root + target_path )
         except:
             op_result = -errno.EACCES
             
