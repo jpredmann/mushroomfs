@@ -163,7 +163,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         for chunk_id in chunk_ids_list:
             logging.debug( 'in for loop for chunk table delete' )
-            del self.chunk_table[ chunk_id ]
+            del self.chunk_table[ chunk_id[0] ]
             logging.debug( 'deleted chunk id' )
 
         del self.file_table[ path ]
