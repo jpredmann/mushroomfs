@@ -198,9 +198,8 @@ class MushroomMaster(Pyro.core.ObjBase):
     ##############################################
 
     # Get the list of ids of the chunks that compose the given file
-    def get_chunk_ids(self, file_descriptor, path):
+    def get_chunk_ids(self, path):
         logging.debug( 'GET_CHUNK_IDS' )
-        chunk_string = os.read( file_descriptor, 1  )
         return self.file_table[ path ]
                 
                 
