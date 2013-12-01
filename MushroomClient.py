@@ -815,6 +815,10 @@ class MushroomClient(Fuse):
 
         def release( self, flags ):
             logging.debug( 'in release' )    
+            logging.debug( 'RESET LAST OFFSET' )
+            client.last_offset = 0
+            logging.debug( 'RESET CHUNK COUNTER' )
+            client.chunk_counter = 0
         
             #initialize operation as not successful
             successful = False
@@ -836,8 +840,6 @@ class MushroomClient(Fuse):
                         
                         #Tell the master (via client) to release the file
                         client.master_server.release( self.file_descriptor, flags )
-                        client.last_offset = 0
-                        client.chunk_counter = 0
                         #change operation status to successul & exit loop
                         successful = True
             
