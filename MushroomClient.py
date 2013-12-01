@@ -1010,6 +1010,10 @@ class MushroomClient(Fuse):
                         data = b"".join( data_chunks_list )
                         logging.debug( 'Joined dat in read' )
                         logging.debug( data )
+                        logging.debug( 'Length of data' )
+                        logging.debug( len( data) )
+                        logging.debug( 'But size is: ' )
+                        logging.debug( size )
                 
                         #change operation status to successul & exit loop
                         successful = True
