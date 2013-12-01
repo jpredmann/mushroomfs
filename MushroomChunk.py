@@ -79,7 +79,7 @@ class MushroomChunk( Pyro.core.ObjBase ):
         except:
             return -errno.EACCES
 
-    def delete( delete_list ):
+    def delete( self, delete_list ):
         
         try:
         
