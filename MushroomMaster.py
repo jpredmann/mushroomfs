@@ -175,6 +175,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( source_list )
             target_list = target_dict[ chunk_server ]
             logging.debug( 'grabbed target list of chunk ids' )
+            logging.debug( target_list )
             chunk_ids_list = self.chunk_server_table[ chunk_server ]
             self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in source_list ]
             self.chunk_server_table[ chunk_server ].extend( target_list )
@@ -183,16 +184,21 @@ class MushroomMaster(Pyro.core.ObjBase):
         logging.debug( 'got old_chunk_ids_list' )
         sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
         logging.debug( 'got sorted_old_chunk_ids_list' )
+        logging.debug( sorted_old_chunk_ids_list )
         new_chunk_ids_list = list( set( target_dict.keys() ) )
         logging.debug( 'got new_chunk_ids_list' )
         sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
         logging.debug( 'got sorted_new_chunk_ids_list' )
+        logging.debug( sorted_new_chunk_ids_list )
 
         for old_chunk_id, new_chunk_id in zip( sorted_old_chunk_ids_list, sorted_new_chunk_ids_list ):
             logging.debug( 'in second for loop' )
             self.chunk_table[ new_chunk_id[0] ] = self.chunk_table[ old_chunk_id[0] ]
+            logging.debug( 'new compre old chunk_table entries' )
+            logging.debug( self.chunk_table[ new_chunk_id[0] )
+            logging.debug( self.chunk_table[ old_chunk_id[0] )
             logging.debug( 'added new chunk_table entry' )
-            del self.chunk_table[ old_chunk_id[0] ]
+            #del self.chunk_table[ old_chunk_id[0] ]
             logging.debug( 'deleted old chunk_table entry' )
 
         self.file_table[ target_path ] = sorted_new_chunk_ids_list
