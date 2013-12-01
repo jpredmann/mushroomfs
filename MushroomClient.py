@@ -551,19 +551,29 @@ class MushroomClient(Fuse):
                     
                 #contact master & get all this file's chunk's IDs
                 chunk_ids_list = self.master_server.get_chunk_ids( path )
+                logging.debug( 'got chunk_ids_list' )
+                logging.debug( chunk_ids_list )
                 delete_dict = {}
                 #for every chunk ID for this file
-                for chunk_id in chunk_ids_list: 
+                for chunk_id in chunk_ids_list:
+                    logging.debug( 'in for loop of unlink' ) 
                     #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                     uuid = chunk_id[0]
                     file_path = chunk_id[1]
                     chunk_name = str( uuid ) + "--" + file_path
+                    logging.debug( 'got chunk_name' )
+                    logging.debug( chunk_name )
                     #contact master & using ID get the location of this chunk
                     chunk_locations_list = self.master_server.get_chunkloc( uuid )
+                    logging.debug( 'got chunk_locations_list for chunk' )
+                    logging.debug( chunk_locations_list )
                     for chunk_location in chunk_locations_list:
+                        logging.debug( 'in delete_dict for loop' )
                         if chunk_location not in delete_dict.keys():
+                            logging.debug('added a new entry to delete_dict' )
                             delete_dict[ chunk_location ] = [ chunk_name ]
                         else:
+                            logging.debug( 'extended a delete_dict entry' )
                             delete_dict[ chunk_location ].extend( chunk_name )
 
  
@@ -574,12 +584,15 @@ class MushroomClient(Fuse):
                         #Try3: connect to chunk servers
                         try:
                             #Connect to proper chunk server for this chunk
-                            self.connect_chunk_server( chunk_location )
                             #Read the chunk data from chunk server
                             for chunk_location in delete_dict.keys():
+                                logging.debug( 'trying to connect to chunk server' )
+                                self.connect_chunk_server( chunk_location )
+                                logging.debug( 'connected to chunk server' )
                                 self.chunk_server.delete( delete_dict[ chunk_location ]  )
-
-                            successful_chunk_read = True
+                                logging.debug( 'sent delete list to chunk server' )
+                                logging.debug( delete_dict[ chunk_location ] )
+                            successful_chunk_delete = True
                             
                         #In case of chunk server connection failure, reconnect
                         except:
