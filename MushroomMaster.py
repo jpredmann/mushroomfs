@@ -182,7 +182,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         old_chunk_ids_list = self.file_table[ source_path ]
         logging.debug( 'got old_chunk_ids_list' )
         sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
-        logging.debug( 'got sorted_old_chunk_ids_list' )`
+        logging.debug( 'got sorted_old_chunk_ids_list' )
         new_chunk_ids_list = list( set( target_dict.keys() ) )
         logging.debug( 'got new_chunk_ids_list' )
         sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
