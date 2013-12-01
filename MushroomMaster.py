@@ -168,7 +168,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     def rename_chunks( self, source_dict, target_dict, source_path, target_path ):
 
         logging.debug( 'RENAME_CHUNKS' ) 
-        for chunk_server in zip( source_dict.keys(), target_dict.keys() ):
+        for chunk_server  in  source_dict.keys():
             logging.debug( 'in first for loop' )
             source_list = source_dict[ chunk_server ]
             logging.debug( 'grabed source list of chunk ids' )
