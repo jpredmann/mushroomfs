@@ -43,6 +43,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     ############################
 
     def __init__(self, root):
+        logging.debug( '__INIT__' )
         
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
@@ -66,6 +67,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Make an dictionary of empty lists where keys are chunk servers and values are
     # a list of chunk ids stored on that chunk server
     def init_chunk_server_table( self ):
+        logging.debug( 'INIT_CHUNK_SERVER_TABLE' )
     
         for server in self.chunk_servers:
             self.chunk_server_table[ server ] = []
@@ -81,10 +83,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     # currently available.  This list get updated by the master server when 
     # Zookeeper reports that a chunk server is no longer available.
     def get_chunk_servers( self ):
+        logging.debug( 'GET_CHUNK_SERVERS' )
         self.chunk_servers.append( self.chunk_servers.pop(0) )
         return self.chunk_servers
 
     def get_chunk_size( self ):
+        logging.debug( 'GET_CHUNK_SIZE' )
         
         return self.chunksize
                 
@@ -98,6 +102,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Returns a list of chunk ids.  Calls an internal chunk allocation method to
     # perform the 'house keeping' tasks with the meta-data tables.
     def generate_chunk_ids(self, file_descriptor, path, num_chunks, file_size ): # return ordered chunkuuid list
+        logging.debug( 'GENERATE_CHUNK_IDS' )
     
         chunk_ids = []                    # List to hold chunk ids
         # Iterate over the number of chunks the file has been split into
@@ -131,6 +136,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
     def register_chunks(self, actual_writes, path ):
+        logging.debug( 'REGISTER_CHUNKS' )
         chunk_ids = actual_writes.keys() 
         # Iterate over the number of chunks the file has been split into
         for id in chunk_ids:
@@ -151,6 +157,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         
     # Allocation method for appending to a file
     def alloc_append(self, path, num_append_chunks): # append chunks
+        logging.debug( 'ALLOC_APPEND' )
         
         # Get chunk ids for existing chunks in file
         chunk_ids = self.file_table[path]
@@ -180,6 +187,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Get the list of chunk servers that hold the given chunk
     def get_chunkloc(self, chunk_id):
+        logging.debug( 'GET_CHUNKLOC' )
         return self.chunk_table[chunk_id]
                 
                 
@@ -191,6 +199,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Get the list of ids of the chunks that compose the given file
     def get_chunk_ids(self, file_descriptor, path):
+        logging.debug( 'GET_CHUNK_IDS' )
         chunk_string = os.read( file_descriptor, 1  )
         return self.file_table[ path ]
                 
@@ -203,6 +212,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Determine if the file already exists
     def exists(self, path):
+        logging.debug( 'EXISTS' )
     
         return os.path.exists( path ) 
                 
@@ -214,6 +224,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
     
     def delete(self, path): # rename for later garbage collection
+        logging.debug( 'DELETE' )
     
         chunk_ids = self.file_table[path]
         
@@ -233,6 +244,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###########################################
 
     def register_chunk_server(self, chunkserver_name):
+        logging.debug( 'REGISTER_CHUNK_SERVER' )
         self.chunk_servers.append(chunkserver_name)   
 
     
@@ -247,10 +259,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
     
     def ftruncate( self, file_descriptor, length ):
+        logging.debug( 'FTRUNCATE' )
         
         try:
             op_result = os.ftruncate( file_descriptor, length )
         except:
+            logging.debug( 'EXCEPTION FTRUNCATE' )
             op_result = -errno.EACCES
         
         return op_result
@@ -263,6 +277,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
     
     def fgetattr( self, file_descriptor, path ):
+        logging.debug( 'FGETATTR' )
         
         try:
             op_result = os.fstat( file_descriptor )
@@ -271,6 +286,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             stats_list[ stat.ST_SIZE ] = file_size
             op_result = posix.stat_result( stats_list )
         except:
+            logging.debug( 'EXCEPTION FTRUNCATE' )
             op_result = -errno.EACCES
         
         return op_result
@@ -283,10 +299,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
     
     def flush( self, file_descriptor ):
+        logging.debug( 'FLUSH' )
         
         try:
             op_result = os.close( os.dup( file_descriptor ) )
         except:
+            logging.debug( 'EXCEPTION FLUSH' )
             op_result = -errno.EACCES
         
         return op_result
@@ -300,6 +318,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     
     # TODO: determine what should be returned
     def fsync( self, file_descriptor, isfsyncfile ):
+        logging.debug( 'FSYNC' )
         
         try:
             if isfsyncfile and hasattr(os, 'fdatasync'):
@@ -307,6 +326,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             else:
                 os.fsync( file_descriptor )
         except:
+            logging.debug( 'EXCEPTION FSYNC' )
             return -errno.EACCES
     
     
@@ -324,10 +344,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
     
     def statfs( self ):
+        logging.debug( 'STATFS' )
     
         try:
             op_result =  os.statvfs( self.root )
         except:
+            logging.debug( 'EXCEPTION STATFS' )
             op_result = -errno.EACCES
             
         return op_result
@@ -340,6 +362,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
 
     def getattr( self, path ):
+        logging.debug( 'GETATTR' )
     
         try:
             op_result = os.lstat( self.root + path[1:] )
@@ -350,6 +373,7 @@ class MushroomMaster(Pyro.core.ObjBase):
                 op_result = posix.stat_result( stats_list )
                 
         except:
+            logging.debug( 'EXCEPTION GETATTR' )
             op_result = -errno.ENOENT
             
         return op_result
@@ -362,10 +386,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
 
     def readlink( self, path ):
+        logging.debug( 'READLINK' )
     
         try:
             op_result =  os.readlink( self.root + path )
         except:
+            logging.debug( 'EXCEPTION READLINK' )
             op_result = -errno.ENOENT
             
         return op_result
@@ -378,10 +404,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
 
     def readdir( self, path ):
+        logging.debug( 'READDIR' )
     
         try:
             op_result = os.listdir( self.root + path )
         except:
+            logging.debug( 'READDIR' )
             op_result = -errno.EBADF
             
         return op_result
@@ -394,6 +422,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
 
     def open( self, path, flags, mode ):
+        logging.debug( 'OPEN' )
         
         key = path + 'size' 
         # if successful the op_result holds the file descriptor
@@ -411,6 +440,7 @@ class MushroomMaster(Pyro.core.ObjBase):
                 
         # if not successful op_result holds the error code        
         except:
+            logging.debug( 'EXCEPTION OPEN' )
             op_result = -errno.ENOENT
         return op_result
     
@@ -423,12 +453,14 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # TODO: Determine what if anything should be returned here
     def release( self, file_descriptor, flags ):
+        logging.debug( 'RELEASE' )
     
         try:
             if file_desciptor > 0:
                 os.close( file_descriptor )
                 op_result = True
         except:
+            logging.debug( 'EXCEPTION RELEASE' )
             op_result =  -errno.ENOSYS
             
         return op_result
@@ -442,12 +474,14 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # TODO: return issues
     def truncate( self, path, length ):
+        logging.debug( 'TRUNCATE' )
     
         try:
             file = open( self.root + path, 'ab' )
             file.truncate( length )
             file.close()
         except:
+            logging.debug( 'EXCEPTION TRUNCATE' )
             return -errno.EACCES
 
 
@@ -458,10 +492,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     #################################
 
     def mkdir(self, path, mode):
+        logging.debug( 'MKDIR' )
     
         try:
             op_result = os.mkdir( self.root + path, mode )
         except:
+            logging.debug( 'EXCEPTION MKDIR' )
             op_result = -errno.EACCES
             
         return op_result
@@ -474,10 +510,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
 
     def rmdir( self, path ):
+        logging.debug( 'RMDIR' )
     
         try:
             op_result = os.rmdir( self.root + path )
         except:
+            logging.debug( 'EXCEPTION RMDIR' )
             op_result = -errno.EACCES
             
         return op_result
@@ -490,10 +528,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
 
     def symlink( self, source_path, target_path ):
+        logging.debug( 'SYMLINK' )
     
         try:
             op_result = os.symlink( source_path, self.root + target_path )
         except:
+            logging.debug( 'EXCEPTION SYMLINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -506,10 +546,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ##################################
 
     def link( self, source_path, target_path ):
+        logging.debug( 'LINK' )
     
         try:
             op_result = os.link( source_path, self.root + target_path )
         except:
+            logging.debug( 'EXCEPTION LINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -522,10 +564,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
 
     def unlink( self, path ):
+        logging.debug( 'UNLINK' )
     
         try:
             op_result = os.unlink( self.root + path )
         except:
+            logging.debug( 'EXCEPTION UNLINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -538,10 +582,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ####################################
 
     def rename( self, source_path, target_path ):
+        logging.debug( 'RENAME' )
     
         try:
             op_result = os.rename( self.root + source_path, self.root + target_path )
         except:
+            logging.debug( 'EXCEPTION RENAME' )
             op_result = -errno.EACCES
             
         return op_result
@@ -554,10 +600,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
 
     def chmod( self, path, mode ):
+        logging.debug( 'CHMOD' )
     
         try:
             op_result = os.chmod( self.root + path, mode )
         except:
+            logging.debug( 'CHMOD' )
             op_result = -errno.EACCES
             
         return op_result
@@ -570,9 +618,11 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
 
     def chown(self, path, user, group):
+        logging.debug( 'CHOWN' )
         try:
             return os.chown(self.root + path, user, group)
         except:
+            logging.debug( 'EXCEPTION CHOWN' )
             return -errno.EACCES
 
 
@@ -583,10 +633,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
 
     def mknod( self, path, mode, device ):
+        logging.debug( 'MKNOD' )
     
         try:
             op_result = os.mknod( self.root + path, mode, device )
         except:
+            logging.debug( 'EXCEPTION MKNOD' )
             op_result = -errno.EACCES
             
         return op_result
@@ -599,10 +651,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     ###################################
 
     def utime( self, path, times ):
+        logging.debug( 'UTIME' )
     
         try:
             op_result = os.utime( self.root + path, times )
         except:
+            logging.debug( 'EXCEPTION UTIME' )
             op_result = -errno.EACCES
             
         return op_result
@@ -616,11 +670,13 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # TODO: This looks incorrect, look into it
     def access( self, path, mode ):
+        logging.debug( 'ACCESS' )
     
         try:
             if not os.access( self.root + path, mode ):
                 raise
         except:
+            logging.debug( 'EXCEPTION ACCESS' )
             return -errno.EACCES
 
 
@@ -630,6 +686,7 @@ class MushroomMaster(Pyro.core.ObjBase):
     
 # Main program.
 def main():
+    logging.debug( 'MAIN' )
 
     # Set default options.
     mountpoint = "~/server"
