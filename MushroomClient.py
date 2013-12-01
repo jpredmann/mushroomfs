@@ -950,8 +950,8 @@ class MushroomClient(Fuse):
                         client.last_offset = client.last_offset + size
 
                         #for every chunk ID for this file
-                        #for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks]:
-                        for chunk_id in sortec_chunk_ids_list[start:stop]:
+                        for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks+previous_num_chunks]:
+                        #for chunk_id in sortec_chunk_ids_list[start:stop]:
                             logging.debug( 'CHUNK ID FOR LOOP' )
                             logging.debug( chunk_id )
                             logging.debug( 'CHUNK COUNTER' )
