@@ -350,8 +350,9 @@ class MushroomClient(Fuse):
                     #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                     uuid = chunk_id[0]
                     file_path = chunk_id[1]
+                    target_name = base64.urlsafe_b64encode( target_path )
                     source_chunk_name = str( uuid ) + "--" + file_path
-                    target_chunk_name = str( uuid ) + "--" + target_path
+                    target_chunk_name = str( uuid ) + "--" + target_name
                     #contact master & using ID get the location of this chunk
                     chunk_locations_list = self.master_server.get_chunkloc( uuid )
                     for chunk_location in chunk_locations_list:
