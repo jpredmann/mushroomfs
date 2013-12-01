@@ -939,9 +939,14 @@ class MushroomClient(Fuse):
                         num_chunks = self.get_num_chunks( size, chunk_size )
                         logging.debug( 'Number Chunks' )
                         logging.debug( num_chunks )
+                        logging.debug( 'SIZE' )
+                        logging.debug( size )
                         start = self.get_num_chunks(offset, chunk_size)
+                        logging.debug( 'START' )
+                        logging.debug( start )
                         stop = self.get_num_chunks( offset + size, chunk_size )
-
+                        logging.debug( 'STOP' )
+                        logging.debug( stop )
                         client.last_offset = client.last_offset + size
 
                         #for every chunk ID for this file
