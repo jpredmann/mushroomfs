@@ -169,26 +169,42 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         logging.debug( 'RENAME_CHUNKS' ) 
         for chunk_server in zip( source_dict.keys(), target_dict.keys() ):
+            logging.debug( 'in first for loop' )
             source_list = source_dict[ chunk_server ]
+            logging.debug( 'grabed source list of chunk ids' )
+            logging.debug( source_list )
             target_list = target_dict[ chunk_server ]
+            logging.debug( 'grabbed target list of chunk ids' )
             chunk_ids_list = self.chunk_server_table[ chunk_server ]
             self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in source_list ]
             self.chunk_server_table[ chunk_server ].extend( target_list )
+            logging.debug( 'updated chunk_server_table' )
         old_chunk_ids_list = self.file_table[ source_path ]
+        logging.debug( 'got old_chunk_ids_list' )
         sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
+        logging.debug( 'got sorted_old_chunk_ids_list' )`
         new_chunk_ids_list = list( set( target_dict.keys() ) )
+        logging.debug( 'got new_chunk_ids_list' )
         sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
+        logging.debug( 'got sorted_new_chunk_ids_list' )
 
         for old_chunk_id, new_chunk_id in zip( sorted_old_chunk_ids_list, sorted_new_chunk_ids_list ):
+            logging.debug( 'in second for loop' )
             self.chunk_table[ new_chunk_id[0] ] = self.chunk_table[ old_chunk_id[0] ]
+            logging.debug( 'added new chunk_table entry' )
             del self.chunk_table[ old_chunk_id[0] ]
+            logging.debug( 'deleted old chunk_table entry' )
 
         self.file_table[ target_path ] = sorted_new_chunk_ids
+        logging.debug( 'added new file_table entry' )
         self.file_table[ target_path + 'size' ] = self.file_table[ source_path + 'size' ]
-        del self.file_table[ path ]
-        del self.file_table[ path + 'size' ]
+        logging.debug( 'added new file_table size entry' )
+        del self.file_table[ source_path ]
+        logging.debug( 'removed old file_table entry' )
+        del self.file_table[ source_path + 'size' ]
+        logging.debug( 'removed old size' )
         os.rename( self.root + source_path, self.root + target_path )
-
+        logging.debug( 'finished rename' )
                 
     #######################################
     ### Routine: alloc_append           ###
