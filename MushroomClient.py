@@ -576,7 +576,7 @@ class MushroomClient(Fuse):
                             logging.debug( 'extended a delete_dict entry' )
                             delete_dict[ chunk_location ].append( chunk_name )
 
- 
+                self.master_server.deregister_chunks( path, delete_dict ) 
                 successful_chunk_delete = False
 
                 while not successful_chunk_delete:

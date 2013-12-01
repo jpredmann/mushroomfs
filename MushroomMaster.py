@@ -148,6 +148,22 @@ class MushroomMaster(Pyro.core.ObjBase):
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
             self.chunk_server_table[ chunk_location ].append( id ) 
+
+    def deregister_chunks( self, path, delete_dict ):
+        
+        for chunk_server in delete_dict.keys():
+            delete_list = delete_dict[ chunk_server ]
+            chunk_ids_list = self.chunk_server_table[ chunk_server ]
+            self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in delete_list ]
+
+        chunk_ids_list = self.file_table[ path ]
+
+        for chunk_id in chunk_ids_list:
+            del self.chunk_table[ chunk_id ]
+
+        del self.file_table[ path ]
+        del self.file_table[ path + 'size' ]
+        os.unlink( self.root + path )
                 
     #######################################
     ### Routine: alloc_append           ###
