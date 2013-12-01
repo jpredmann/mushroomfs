@@ -191,6 +191,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         logging.debug( 'got sorted_new_chunk_ids_list' )
         logging.debug( sorted_new_chunk_ids_list )
 
+        """
         for old_chunk_id, new_chunk_id in zip( sorted_old_chunk_ids_list, sorted_new_chunk_ids_list ):
             logging.debug( 'in second for loop' )
             self.chunk_table[ new_chunk_id[0] ] = self.chunk_table[ old_chunk_id[0] ]
@@ -200,6 +201,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( 'added new chunk_table entry' )
             #del self.chunk_table[ old_chunk_id[0] ]
             logging.debug( 'deleted old chunk_table entry' )
+        """
 
         self.file_table[ target_path ] = sorted_new_chunk_ids_list
         logging.debug( 'added new file_table entry' )
