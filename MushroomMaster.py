@@ -152,26 +152,43 @@ class MushroomMaster(Pyro.core.ObjBase):
     def deregister_chunks( self, path, delete_dict ):
         logging.debug( 'DEREGISTER_CHUNKS' ) 
         for chunk_server in delete_dict.keys():
-            logging.debug( 'in for loop for dict delete' )
             delete_list = delete_dict[ chunk_server ]
-            logging.debug( 'got list to delete for chunk server' )
             chunk_ids_list = self.chunk_server_table[ chunk_server ]
-            logging.debug( 'got list of chunks on server' )
             self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in delete_list ]
-            logging.debug( 'stored new list with deletes' )
         chunk_ids_list = self.file_table[ path ]
 
         for chunk_id in chunk_ids_list:
-            logging.debug( 'in for loop for chunk table delete' )
             del self.chunk_table[ chunk_id[0] ]
-            logging.debug( 'deleted chunk id' )
 
         del self.file_table[ path ]
-        logging.debug( 'deleted file table entry for file' )
         del self.file_table[ path + 'size' ]
-        logging.debug( 'deleted file table entry for file size' )
         os.unlink( self.root + path )
-        logging.debug( 'removed file from os' )
+
+
+    def rename_chunks( source_dict, target_dict, source_path, target_path )
+
+        logging.debug( 'RENAME_CHUNKS' ) 
+        for chunk_server in zip( source_dict.keys(), target_dict.keys() ):
+            source_list = source_dict[ chunk_server ]
+            target_list = target_dict[ chunk_server ]
+            chunk_ids_list = self.chunk_server_table[ chunk_server ]
+            self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in source_list ]
+            self.chunk_server_table[ chunk_server ].extend( target_list )
+        old_chunk_ids_list = self.file_table[ source_path ]
+        sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
+        new_chunk_ids_list = list( set( target_dict.keys() ) )
+        sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
+
+        for old_chunk_id, new_chunk_id in zip( sorted_old_chunk_ids_list, sorted_new_chunk_ids_list ):
+            self.chunk_table[ new_chunk_id[0] ] = self.chunk_table[ old_chunk_id[0] ]
+            del self.chunk_table[ old_chunk_id[0] ]
+
+        self.file_table[ target_path ] = sorted_new_chunk_ids
+        self.file_table[ target_path + 'size' ] = self.file_table[ source_path + 'size' ]
+        del self.file_table[ path ]
+        del self.file_table[ path + 'size' ]
+        os.unlink( self.root + path )
+
                 
     #######################################
     ### Routine: alloc_append           ###
