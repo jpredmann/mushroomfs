@@ -577,27 +577,27 @@ class MushroomClient(Fuse):
                             delete_dict[ chunk_location ].extend( chunk_name )
 
  
-                    successful_chunk_delete = False
+                successful_chunk_delete = False
 
-                    while not successful_chunk_delete:
+                while not successful_chunk_delete:
                             
-                        #Try3: connect to chunk servers
-                        try:
-                            #Connect to proper chunk server for this chunk
-                            #Read the chunk data from chunk server
-                            for chunk_location in delete_dict.keys():
-                                logging.debug( 'trying to connect to chunk server' )
-                                self.connect_chunk_server( chunk_location )
-                                logging.debug( 'connected to chunk server' )
-                                self.chunk_server.delete( delete_dict[ chunk_location ]  )
-                                logging.debug( 'sent delete list to chunk server' )
-                                logging.debug( delete_dict[ chunk_location ] )
-                            successful_chunk_delete = True
+                    #Try3: connect to chunk servers
+                    try:
+                        #Connect to proper chunk server for this chunk
+                        #Read the chunk data from chunk server
+                        for chunk_location in delete_dict.keys():
+                            logging.debug( 'trying to connect to chunk server' )
+                            self.connect_chunk_server( chunk_location )
+                            logging.debug( 'connected to chunk server' )
+                            self.chunk_server.delete( delete_dict[ chunk_location ]  )
+                            logging.debug( 'sent delete list to chunk server' )
+                            logging.debug( delete_dict[ chunk_location ] )
+                        successful_chunk_delete = True
                             
-                        #In case of chunk server connection failure, reconnect
-                        except:
-                            logging.debug( 'EXCEPTION READ CHUNK SERVER' )
-                            self.reconnect_chunk_server()
+                    #In case of chunk server connection failure, reconnect
+                    except:
+                        logging.debug( 'EXCEPTION READ CHUNK SERVER' )
+                        self.reconnect_chunk_server()
                         
                 #change operation status to successul & exit loop
                 successful = True
