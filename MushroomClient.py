@@ -332,36 +332,65 @@ class MushroomClient(Fuse):
         
     def rename( self, source_path, target_path  ):
         logging.debug( 'RENAME' )    
+        #initialize operation as not successful
         successful = False
-        actual_renames = {}
-        
-        while not successful:
-        
-            try:
             
-                if( self.timestamp != client.timestamp ):
-                    self._reinitialize()
-                else:
-                
-                    if client.master_server.exists( source_path ):
-                        if client.master_server.exits( target_path ):
-                            op_result = -errno.EACCES
+        #continue until we are successful
+        while not successful:
+            
+            #Try1: connect master, Try2: open file
+            try:
+                    
+                #contact master & get all this file's chunk's IDs
+                chunk_ids_list = self.master_server.get_chunk_ids( source_path )
+                source_dict = {}
+                target_dict = {}
+                #for every chunk ID for this file
+                for chunk_id in chunk_ids_list:
+                    #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
+                    uuid = chunk_id[0]
+                    file_path = chunk_id[1]
+                    source_chunk_name = str( uuid ) + "--" + file_path
+                    target_chunk_name = str( uuid ) + "--" + target_path
+                    #contact master & using ID get the location of this chunk
+                    chunk_locations_list = self.master_server.get_chunkloc( uuid )
+                    for chunk_location in chunk_locations_list:
+                        if chunk_location not in source_dict.keys():
+                            source_dict[ chunk_location ] = [ source_chunk_name ]
+                            target_dict[ chunk_location ] = [ target_chunk_name ]
                         else:
-                            chunk_ids_list = client.master_server.get_chunk_ids( source_path )
-                            actual_renames = self.rename_chunks( chunk_ids_list, target_path )
-                            self.master_server.rename( source_path, target_path )
+                            source_dict[ chunk_location ].append( source_chunk_name )
+                            target_dict[ chunk_location ].append( target_chunk_name )
+
+                self.master_server.rename_chunks( source_dict, target_dict ) 
+                successful_chunk_rename = False
+
+                while not successful_chunk_rename:
+                            
+                    #Try3: connect to chunk servers
+                    try:
+                        #Connect to proper chunk server for this chunk
+                        #Read the chunk data from chunk server
+                        for chunk_location in source_dict.keys():
+                            self.connect_chunk_server( chunk_location )
+                            self.chunk_server.rename( source_dict[ chunk_location ], target_dict[ chunk_location ]  )
+                        successful_chunk_rename = True
+                            
+                    #In case of chunk server connection failure, reconnect
+                    except:
+                        self.reconnect_chunk_server()
                         
-                    else:
-                        op_result = -errno.EACCES
-                        
-                    successful = True
+                #change operation status to successul & exit loop
+                successful = True
+            
+            #In case of master connection failure, reconnect & reset timestamps
             except:
                 logging.debug( 'EXCEPTION RENAME' )
                 client.reconnect_master_server()
                 self._reinitialize()
                 
-        client.master_server.register_chunks( actual_renames )
-        return op_result
+        #return the read binary data to FUSE
+        return None
 
             
     ##################################
@@ -551,29 +580,19 @@ class MushroomClient(Fuse):
                     
                 #contact master & get all this file's chunk's IDs
                 chunk_ids_list = self.master_server.get_chunk_ids( path )
-                logging.debug( 'got chunk_ids_list' )
-                logging.debug( chunk_ids_list )
                 delete_dict = {}
                 #for every chunk ID for this file
                 for chunk_id in chunk_ids_list:
-                    logging.debug( 'in for loop of unlink' ) 
                     #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                     uuid = chunk_id[0]
                     file_path = chunk_id[1]
                     chunk_name = str( uuid ) + "--" + file_path
-                    logging.debug( 'got chunk_name' )
-                    logging.debug( chunk_name )
                     #contact master & using ID get the location of this chunk
                     chunk_locations_list = self.master_server.get_chunkloc( uuid )
-                    logging.debug( 'got chunk_locations_list for chunk' )
-                    logging.debug( chunk_locations_list )
                     for chunk_location in chunk_locations_list:
-                        logging.debug( 'in delete_dict for loop' )
                         if chunk_location not in delete_dict.keys():
-                            logging.debug('added a new entry to delete_dict' )
                             delete_dict[ chunk_location ] = [ chunk_name ]
                         else:
-                            logging.debug( 'extended a delete_dict entry' )
                             delete_dict[ chunk_location ].append( chunk_name )
 
                 self.master_server.deregister_chunks( path, delete_dict ) 
@@ -586,17 +605,12 @@ class MushroomClient(Fuse):
                         #Connect to proper chunk server for this chunk
                         #Read the chunk data from chunk server
                         for chunk_location in delete_dict.keys():
-                            logging.debug( 'trying to connect to chunk server' )
                             self.connect_chunk_server( chunk_location )
-                            logging.debug( 'connected to chunk server' )
                             self.chunk_server.delete( delete_dict[ chunk_location ]  )
-                            logging.debug( 'sent delete list to chunk server' )
-                            logging.debug( delete_dict[ chunk_location ] )
                         successful_chunk_delete = True
                             
                     #In case of chunk server connection failure, reconnect
                     except:
-                        logging.debug( 'EXCEPTION READ CHUNK SERVER' )
                         self.reconnect_chunk_server()
                         
                 #change operation status to successul & exit loop
@@ -604,7 +618,7 @@ class MushroomClient(Fuse):
             
             #In case of master connection failure, reconnect & reset timestamps
             except:
-                logging.debug( 'EXCEPTION READ' )
+                logging.debug( 'EXCEPTION UNLINK' )
                 client.reconnect_master_server()
                 self._reinitialize()
                 
