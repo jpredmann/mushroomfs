@@ -14,6 +14,8 @@ import pickle
 import base64
 import stat
 import posix
+import netifaces
+
 
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
@@ -27,91 +29,6 @@ Follow the instruction in the README file to install it, or go the Pyro
 webpage http://pyro.sourceforge.net.
 """
     sys.exit(1)
-
-
-################################
-### MUSHROOM CERT VALIDATOR  ###
-################################
-
-# Certificate validator class.
-class MushroomCertValidator(Pyro.protocol.BasicSSLValidator):
-    
-    
-    ############################
-    ### Class Initialization ###
-    ############################
-    def __init__(self):
-        if os.path.isfile('authorized-clients'):
-            self.cfgfile = 'authorized-clients'
-        else:
-            sys.exit(1)
-
-        self.clients = self.clients_regexp = {}
-        
-        try:
-            # Read authorized-clients file.
-            f = open(self.cfgfile, 'r')
-            for line in f:
-                # Strip trailing end-line
-                line = line.rstrip('\n')
-                # Skip inline comments
-                line = re.sub('#.*', '', line)
-                # Strip spaces
-                line = line.strip()
-                # Skip empty lines
-                if line == '':
-                    continue
-                # Adding a new entry to the hash of authorized clients
-                regexp = re.match(r'^regexp:(.*)', line)
-                if regexp is None:
-                    self.clients[line] = True
-                else:
-                    self.clients_regexp[regexp.group(1)] = True
-            f.close()
-        except Exception, e:
-            raise e
-
-        Pyro.protocol.BasicSSLValidator.__init__(self)
-    
-    ###############################
-    ### Routine: MCV.authorize  ###
-    ###############################
-
-    def authorize(self, subject):
-        return (1, 0)
-
-    ###############################
-    ### Routine: MCV.deny       ###
-    ###############################
-
-    def deny(self, subject, code):
-        return (0, code)
-            
-    #####################################
-    ### Routine: MCV.checkCertificate ###
-    #####################################
-
-    def checkCertificate(self, cert):
-    
-        # Client must have a valid certificate
-        if cert is None:
-            return self.deny('NULL', 3)
-            
-        # Subject must match one of the subjects specified in the
-        # authorized-clients file
-        subject = str(cert.get_subject())
-        
-        if self.clients.has_key(subject):
-            return self.authorize(subject)
-        else:
-            # Check also if the subject matches one of the defined
-            # regular expressions
-            for m in self.clients_regexp.keys():
-                if re.match(m, subject):
-                    return self.authorize(subject)
-                    
-            return self.deny(subject, 4)
-
 
 
 ###########################
@@ -131,11 +48,9 @@ class MushroomMaster(Pyro.core.ObjBase):
         os.chdir( self.root )
         #self.chunksize = 1048576        # Max size of chunks in bytes (1MB)
         self.chunksize = 4096
-        self.chunkrobin = 0             # Index of the next chunk server to use
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
-        #self.chunk_servers = [ ( '0.0.0.0', 3637 ), ('0.0.0.0', 3638) ]         # List of registered chunk servers
         self.chunk_servers = ['MushroomChunkOne', 'MushroomChunkTwo', 'MushroomChunkThree', 'MushroomChunkFour' ]
         self.init_chunk_server_table()
 
@@ -166,30 +81,16 @@ class MushroomMaster(Pyro.core.ObjBase):
     # currently available.  This list get updated by the master server when 
     # Zookeeper reports that a chunk server is no longer available.
     def get_chunk_servers( self ):
-        logging.debug( 'in get chunk servers')
         self.chunk_servers.append( self.chunk_servers.pop(0) )
-        logging.debug( self.chunk_servers )
         return self.chunk_servers
 
     def get_chunk_size( self ):
         
         return self.chunksize
-
-    #################################
-    ### write_metafile             ###
-    ### USed by: generate_chunkids ###
-    #################################
-    def write_metafile(self, path, chunk_string):
-        f = open(self.root + path, 'w')
-        f.write(chunk_string)
-        f.flush()
-        f.close()
-        #import subprocess
-        #subprocess.call(['echo', " \" " + chunk_string + " \" ", '>', self.root+path[1:]])        
                 
                 
     ####################################
-    ### Routine: alloc               ###
+    ### Routine: generte_chunk_ids   ###
     ###                              ###
     ### Used by: Client.MF.write     ###
     ####################################
@@ -215,56 +116,32 @@ class MushroomMaster(Pyro.core.ObjBase):
         #with open( path, 'wb' ) as file:
             #pickle.dump( chunk_ids, file )
         
-        #chunk_string = pickle.dumps( chunk_ids )
-        os.write( file_descriptor, "updateing" )
-        logging.debug( 'Got to writing to file table' )
+        os.write( file_descriptor, "updating" )
         self.file_table[ path ].extend( chunk_ids )
         self.file_table[ path + 'size' ] = self.file_table[ path +'size' ] + file_size
-        logging.debug( 'File size in gen chunks' )
-        logging.debug( file_size )
-        logging.debug( self.file_table[ path + 'size' ] )
-        logging.debug( 'Wrote to file table: ' )
-        logging.debug( self.file_table[ path ] )
         return chunk_ids
                 
                 
-    #################################
-    ### Subroutine: alloc_chunks  ###
-    ###                           ###
-    ### Used by: alloc            ###
-    #################################
+    ####################################
+    ### Subroutine: register_chunks  ###
+    ###                              ###
+    ### Used by: client.MF.write     ###
+    ####################################
 
     # Internal house keeping method to update meta-data tables, returns a list of chunk
     # ids back to the allocating method that called it.
     def register_chunks(self, actual_writes, path ):
-        logging.debug( 'In register_chunks' ) 
         chunk_ids = actual_writes.keys() 
-        logging.debug( 'chunk_ids' )
-        logging.debug( chunk_ids )
         # Iterate over the number of chunks the file has been split into
         for id in chunk_ids:
-            logging.debug( 'In for loop for reister_chunks' )
-            logging.debug( id )
             # Add entry into the chunk table for the new UUID containing primary server
             # for that chunk (pre-replication).
             uuid = id[0]
-            logging.debug( 'UUID in register_chunks' )
-            logging.debug( uuid )
-            logging.debug( 'id' )
-            logging.debug( id )
             chunk_location = actual_writes[ id ]
-            logging.debug( 'chunk_location' )
-            logging.debug( chunk_location )
             self.chunk_table[ uuid ] = [ chunk_location ]
-            logging.debug('CHUNK TABLES CONTENTS')
-            logging.debug(self.chunk_table)
-            logging.debug( 'set chunk table entry' )
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
             self.chunk_server_table[ chunk_location ].append( id ) 
-            logging.debug( 'set chunk server table' )
-            logging.debug(self.chunk_server_table)
-        #self.file_table[ path + 'size' ] = 4096 * len( self.file_table[ path ] )    
                 
     #######################################
     ### Routine: alloc_append           ###
@@ -303,11 +180,6 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Get the list of chunk servers that hold the given chunk
     def get_chunkloc(self, chunk_id):
-        logging.debug('CALL TO GET CHUNK LOCATIONS')
-        logging.debug('the key from client is:')
-        logging.debug(chunk_id)
-        logging.debug('the value for the chunk is:')
-        logging.debug(self.chunk_table[chunk_id])    
         return self.chunk_table[chunk_id]
                 
                 
@@ -319,20 +191,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     # Get the list of ids of the chunks that compose the given file
     def get_chunk_ids(self, file_descriptor, path):
-        logging.debug( 'MADE IT TO GET CHUNK IDS' )
-        logging.debug( self.root + path[1:] )
-        #mode = os.fstat( file_descriptor )
-        #logging.debug( 'Got mode in get chunk ids' )
-        #logging.debug( mode )
-        #file_size = mode[ stat.ST_SIZE ]
-        #logging.debug( 'Got file size' )
-        #logging.debug( file_size )
         chunk_string = os.read( file_descriptor, 1  )
-        #logging.debug( 'Got chunk_ids string' )
-        #logging.debug( chunk_string )
-        #chunk_ids = pickle.loads( chunk_string )
-        #logging.debug( 'Got chunk_ids' )
-        #logging.debug( chunk_ids )
         return self.file_table[ path ]
                 
                 
@@ -373,8 +232,6 @@ class MushroomMaster(Pyro.core.ObjBase):
     ### Used by: N/A                        ###
     ###########################################
 
-    #def register_chunk_server(self, ip_address, port_number):
-        #self.chunk_servers.append( (ip_address, port_number) )
     def register_chunk_server(self, chunkserver_name):
         self.chunk_servers.append(chunkserver_name)   
 
@@ -400,41 +257,6 @@ class MushroomMaster(Pyro.core.ObjBase):
     
     
     ####################################
-    ### Routine: read                ###
-    ###                              ###
-    ### Used by: Client.MF.read      ###
-    ####################################
-    
-    def read( self, file_descriptor, size, offset ):
-        
-        try:
-            os.lseek( file_descriptor, offset, 0 )
-            op_result = os.read( file_descriptor, size )
-        except:
-            op_result = -errno.EACCES
-        
-        return op_result
-    
-    
-    ####################################
-    ### Routine: write               ###
-    ###                              ###
-    ### Used by: Client.MF.write     ###
-    ####################################
-    
-    def write( self, file_descriptor, buffer, offset ):
-        
-        try:
-            os.lseek( file_descriptor, offset, 0 )
-            os.write( file_descriptor, buffer )
-            op_result = len( buffer )
-        except:
-            op_result = -errno.EACCES
-        
-        return op_result
-    
-    
-    ####################################
     ### Routine: fgetattr            ###
     ###                              ###
     ### Used by: Client.MF.fgetattr  ###
@@ -443,19 +265,11 @@ class MushroomMaster(Pyro.core.ObjBase):
     def fgetattr( self, file_descriptor, path ):
         
         try:
-            logging.debug( 'In fgetattr, about to call fstat' )
             op_result = os.fstat( file_descriptor )
-            logging.debug( 'Got fstat' )
             file_size = self.file_table[ path + 'size' ]
-            logging.debug( 'Got file size' )
-            logging.debug( file_size )
             stats_list = list( op_result )
             stats_list[ stat.ST_SIZE ] = file_size
             op_result = posix.stat_result( stats_list )
-            #op_result[ stat.ST_SIZE ] = file_size
-            logging.debug( type( op_result ) )
-            logging.debug( op_result )
-            logging.debug( 'in fgetattr, got fstat' )
         except:
             op_result = -errno.EACCES
         
@@ -528,26 +342,12 @@ class MushroomMaster(Pyro.core.ObjBase):
     def getattr( self, path ):
     
         try:
-            #op_result = os.lstat( self.root + path )
-            logging.debug( 'GETATTR CALLED' )
-            logging.debug( 'about to lstat this path' )
-            logging.debug( self.root + path[1:] )
             op_result = os.lstat( self.root + path[1:] )
-            logging.debug( 'Path is' )
-            logging.debug( self.root + path[1:] )
-            logging.debug( op_result )
-            logging.debug( 'File table keys' )
-            logging.debug( self.file_table.keys() )
-            logging.debug( 'Key being used' )
-            logging.debug( path  )
             if path in self.file_table.keys():
                 file_size = self.file_table[ path + 'size' ]
-                logging.debug( 'Got file size' )
-                logging.debug( file_size )
                 stats_list = list( op_result )
                 stats_list[ stat.ST_SIZE ] = file_size
                 op_result = posix.stat_result( stats_list )
-                logging.debug( op_result )
                 
         except:
             op_result = -errno.ENOENT
@@ -599,32 +399,19 @@ class MushroomMaster(Pyro.core.ObjBase):
         # if successful the op_result holds the file descriptor
         try:
             if mode:
-                #iop_result = os.open( self.root + path, flags, mode[0] )
                 op_result = os.open( self.root + path[1:], os.O_CREAT|os.O_RDWR, mode[0] )
                 if key not in self.file_table.keys():
                     self.file_table[ path ] = []
                     self.file_table[ path + 'size' ] = 0
-                logging.debug( 'Flags' )
-                logging.debug( flags )
-                logging.debug( 'Just opened file with mode' )
-                logging.debug( path )
-                logging.debug( os.stat( self.root + path[1:] ) )
-                logging.debug( self.root + path[1:] )
-                logging.debug( 'Done opening file with mode' )
             else:
                 op_result = os.open( self.root + path[1:], os.O_CREAT|os.O_RDWR )
                 if key not in self.file_table.keys():
                     self.file_table[ path ] = []
                     self.file_table[ path + 'size' ] = 0
-                logging.debug( path )
-                logging.debug( 'Just opened file no mode' )
-                logging.debug( self.root + path )
-                logging.debug( os.stat( self.root + path ) )
                 
         # if not successful op_result holds the error code        
         except:
             op_result = -errno.ENOENT
-        logging.debug( 'about to return from open in master' )    
         return op_result
     
     
@@ -845,20 +632,12 @@ class MushroomMaster(Pyro.core.ObjBase):
 def main():
 
     # Set default options.
-    hostname = '0.0.0.0'
-    port = 3636
-    foreground = False
-    secure = False
     mountpoint = "~/server"
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument( "mountpoint", help="A directory or mount point must be specified" )
     parser.add_argument( '-v', '--version', action='store_true', help="Prints version information for the chunk server" )
-    #parser.add_argument( '-a', '--address', dest=hostname, help="Used to specify the ip address of the chunk server" )
-    #parser.add_argument( '-p', '--port', dest=port, help="User to specify the port the chunk server listens on" )
-    #parser.add_argument( '-s', '--secure', action='store_true', dest=foreground, help="Run in secure mode using x509 certificate authentication" )
-    #parser.add_argument( '-f', '--foreground', action='store_true', dest=secure, help="Run the chunk server in the foreground" )
 
     args = parser.parse_args()
     mountpoint = args.mountpoint
@@ -874,8 +653,7 @@ def main():
     pid = 0
     
     try:
-        if not foreground:
-            pid = os.fork()
+        pid = os.fork()
     except OSError, e:
         raise Exception, "%s [%d]" % (e.strerror, e.errno)
         
@@ -893,18 +671,9 @@ def main():
         #find the nameserver
         ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
         
-        if secure:
-            daemon = Pyro.core.Daemon(prtcol='PYROSSL', host=hostname, port=port)
-            daemon.setNewConnectionValidator(MushroomCertValidator())
-        else:
-            #daemon = Pyro.core.Daemon(prtcol='PYRO', host=hostname, port=port)
-            import netifaces
-            ip = netifaces.ifaddresses('eth0')[2][0]['addr']
-            daemon = Pyro.core.Daemon('PYRO',ip)
+        ip = netifaces.ifaddresses('eth0')[2][0]['addr']
+        daemon = Pyro.core.Daemon('PYRO',ip)
             
-        # Use persistent connection (we don't want to use a Pyro
-        # nameserver, to keep the things simple).
-        #uri = daemon.connectPersistent(master_server, 'MushroomFS')
         daemon.useNameServer(ns)
         uri = daemon.connect(master_server, 'MushroomFS')
         
@@ -918,5 +687,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-
-            
