@@ -536,12 +536,11 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( 'Path is' )
             logging.debug( self.root + path[1:] )
             logging.debug( op_result )
-            key = self.root + path[1:]
             logging.debug( 'File table keys' )
             logging.debug( self.file_table.keys() )
             logging.debug( 'Key being used' )
-            logging.debug( key )
-            if key in self.file_table.keys():
+            logging.debug( path  )
+            if path in self.file_table.keys():
                 file_size = self.file_table[ path + 'size' ]
                 logging.debug( 'Got file size' )
                 logging.debug( file_size )
