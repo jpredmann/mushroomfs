@@ -574,7 +574,7 @@ class MushroomClient(Fuse):
                             delete_dict[ chunk_location ] = [ chunk_name ]
                         else:
                             logging.debug( 'extended a delete_dict entry' )
-                            delete_dict[ chunk_location ].extend( chunk_name )
+                            delete_dict[ chunk_location ].append( chunk_name )
 
  
                 successful_chunk_delete = False
