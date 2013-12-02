@@ -976,6 +976,7 @@ class MushroomClient(Fuse):
                 
                     #Verify that the file's timestamp is valid
                     if( self.timestamp != client.timestamp ):
+                        logging.debug( 'timestamp failure' )
                         #And reinit so that timestamp gets updated
                         self._reinitialize()
                     
@@ -986,7 +987,8 @@ class MushroomClient(Fuse):
                         
                         #contact master & get all this file's chunk's IDs
                         chunk_ids_list = client.master_server.get_chunk_ids( self.path )
-
+                        logging.debug( 'chunk_ids_list' )
+                        logging.debug( chunk_ids_list )
                         #sort the chunk IDS such that they are in order
                         sorted_chunk_ids_list = sorted( chunk_ids_list, key=itemgetter( 0 ) )
 
@@ -1011,12 +1013,18 @@ class MushroomClient(Fuse):
                             
                                 #master returns a list of servers with that chunk, pick the 1st
                                 chunk_location = chunk_locations_list[0]
+                                logging.debug( 'chunk_location' )
+                                logging.debug( chunk_location )
                                 #Try3: connect to chunk servers
                                 try:
                                     #Connect to proper chunk server for this chunk
+                                    logging.debug( 'trying to connect to chunk server' )
                                     client.connect_chunk_server( chunk_location )
+                                    logging.debug( 'connected to chunk server' )
                                     #Read the chunk data from chunk server
                                     data_chunk = client.chunk_server.read( chunk_name )
+                                    logging.debug( 'got data_chunk: ' )
+                                    logging.debug* data_chunk )
                                     #add this chunk's data to the list
                                     data_chunks_list.append( data_chunk )
                                     successful_chunk_read = True
@@ -1075,6 +1083,8 @@ class MushroomClient(Fuse):
                         chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks, len( buf ) )
                         #call to subroutine to write each chunk to the appropriate chunk server
                         actual_writes = self.write_chunks( chunk_ids_list, buf, chunk_size )
+                        logging.debug( 'in write, actual_writes' )
+                        logging.debug( actual_writes )
                         
                         #change operation status to successul & exit loop
                         successful = True
@@ -1126,6 +1136,8 @@ class MushroomClient(Fuse):
                 try:
                     #Get a full list of active chunk servers from the master
                     chunk_server_list = client.master_server.get_chunk_servers()
+                    logging.debug( 'chunk_server_list' )
+                    logging.debug( chunk_server_list )
                     #finished with master, move to next step
                     successful_master = True
                 
@@ -1177,7 +1189,6 @@ class MushroomClient(Fuse):
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
                             actual_writes[ chunk_id ].append( chunk_location )
-
 
 
                             #delete that chunk from list (in case of failure: only failed chunks retry)
