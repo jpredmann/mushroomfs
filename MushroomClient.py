@@ -146,8 +146,6 @@ class MushroomClient(Fuse):
     def reconnect_master_server( self ):
         logging.debug( 'RECONNECT_MASTER_SERVER' )
         
-        #reestablish new lock
-        self.lock.acquire()
         #toggle the master connection status to false
         self.connected_master = False
         
