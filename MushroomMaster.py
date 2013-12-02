@@ -16,6 +16,7 @@ import stat
 import posix
 import netifaces
 from operator import itemgetter
+import itertools
 
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
@@ -185,7 +186,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
         logging.debug( 'got sorted_old_chunk_ids_list' )
         logging.debug( sorted_old_chunk_ids_list )
-        new_chunk_ids_list = list( set( target_dict.values() ) )
+        new_chunk_ids_list = list( set( itertools.chain.from_iterable( target_dict.values() ) ) )
         logging.debug( 'got new_chunk_ids_list' )
         sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
         logging.debug( 'got sorted_new_chunk_ids_list' )
