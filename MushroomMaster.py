@@ -95,10 +95,25 @@ class MushroomMaster(Pyro.core.ObjBase):
                 uuid_string, file_path = file.split( "--" )
                 logging.debug( 'split file name' )
                 uuid = time_uuid.TimeUUID( uuid_string )
+                path = base64.urlsafe_b64decode( file_path )
                 logging.debug( 'uuid: ' )
                 logging.debug( uuid )
                 chunk_ids_list.append( ( uuid, file_path ) )        
+
+                if uuid not in self.chunk_table.keys():
+                    self.chunk_table[ uuid ] = []
+                self.chunk_table[ uuid ].append( chunk_server )
+
+            logging.debug( 'chunk_ids_list' )
             logging.debug( chunk_ids_list )
+
+            self.chunk_server_table[ chunk_server ] = chunk_ids_list
+            logging.debug( 'Meta-data tables' )
+            logging.debug( self.chunk_server_table)
+            logging.debug( self.chunk_table )
+            
+
+
     ###########################################
     ### Routine: init_chunk_server_table    ###
     ###                                     ###
