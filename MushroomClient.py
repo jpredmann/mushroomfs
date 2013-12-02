@@ -1114,8 +1114,12 @@ class MushroomClient(Fuse):
             #writing status with chunk servers
             successful_chunk = False
             #splice original data into chunks where size of chunks defined by master
-            data_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
+            singular_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
+            data_chunks_list = []
+            replication_factor = 3
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
+            for chunk in singular_chunks_list:
+                data_chunks_list.extend( [chunk]*replication_factor )
             actual_writes = {}
             chunk_server_list = [] 
             #continue until we are successful & done with master
