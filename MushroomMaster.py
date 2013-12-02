@@ -828,7 +828,12 @@ def main():
         daemon = Pyro.core.Daemon('PYRO',ip)
             
         daemon.useNameServer(ns)
-        uri = daemon.connect(master_server, 'MushroomFS')
+        try:
+
+            ns.unregister( 'MushroomFS' )
+
+        except:
+            uri = daemon.connect(master_server, 'MushroomFS')
         
         try:
             # Start the daemon.
