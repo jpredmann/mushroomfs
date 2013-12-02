@@ -831,6 +831,7 @@ def main():
         try:
 
             ns.unregister( 'MushroomFS' )
+            uri = daemon.connect( master_server, 'MushroomFS' )
 
         except:
             uri = daemon.connect(master_server, 'MushroomFS')
