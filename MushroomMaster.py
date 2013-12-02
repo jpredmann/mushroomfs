@@ -145,10 +145,11 @@ class MushroomMaster(Pyro.core.ObjBase):
             # for that chunk (pre-replication).
             uuid = id[0]
             chunk_location = actual_writes[ id ]
-            self.chunk_table[ uuid ] = [ chunk_location ]
+            self.chunk_table[ uuid ] = chunk_location 
             # Append to the entry in the chunk server table the chunk id that is now held
             # on that chunk server.
-            self.chunk_server_table[ chunk_location ].append( id ) 
+            for location in chunk_location:
+                self.chunk_server_table[ location ].append( id ) 
 
     def deregister_chunks( self, path, delete_dict ):
         logging.debug( 'DEREGISTER_CHUNKS' ) 

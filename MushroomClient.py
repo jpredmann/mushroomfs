@@ -1153,14 +1153,14 @@ class MushroomClient(Fuse):
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
                             chunk_server_index = index % len( chunk_server_list )
 
-
+                            actual_writes[ chunk_id ] = []
                             #from list get location of where chunk should go (i.e. which chunkserver)
                             chunk_location = chunk_server_list[ chunk_server_index ]
                             #connect to that chunk server
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
-                            actual_writes[ chunk_id ] = chunk_location
+                            actual_writes[ chunk_id ].append ( chunk_location )
 
 
                             chunk_location = chunk_server_list[ chunk_server_index + 1 ]
@@ -1168,7 +1168,7 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
-                            actual_writes[ chunk_id ] = chunk_location
+                            actual_writes[ chunk_id ].append( chunk_location )
 
 
                             chunk_location = chunk_server_list[ chunk_server_index + 2 ]
@@ -1176,7 +1176,7 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
-                            actual_writes[ chunk_id ] = chunk_location
+                            actual_writes[ chunk_id ].append( chunk_location )
 
 
 
