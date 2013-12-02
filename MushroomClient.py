@@ -280,7 +280,10 @@ class MushroomClient(Fuse):
                 
                 #call to the master server to perform iterative operations
                 direntries = ['.', '..']
+                logging.debug( 'trying to call master_server readdir' )
                 direntries.extend( self.master_server.readdir( path[1:] ) )
+                logging.debug( 'dir entries: ' )
+                logging.debug( direntries )
                 for item in direntries:
                     #as per FUSE docs use yield 
                     yield fuse.Direntry( item )
