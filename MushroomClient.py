@@ -358,11 +358,11 @@ class MushroomClient(Fuse):
                     chunk_locations_list = self.master_server.get_chunkloc( uuid )
                     for chunk_location in chunk_locations_list:
                         if chunk_location not in source_dict.keys():
-                            source_dict[ chunk_location ] = [ source_chunk_name ]
-                            target_dict[ chunk_location ] = [ target_chunk_name ]
+                            source_dict[ chunk_location ] = [ chunk_id ]
+                            target_dict[ chunk_location ] = [ (uuid, target_name) ]
                         else:
-                            source_dict[ chunk_location ].append( source_chunk_name )
-                            target_dict[ chunk_location ].append( target_chunk_name )
+                            source_dict[ chunk_location ].append( chunk_id )
+                            target_dict[ chunk_location ].append( ( uuid, target_name ) )
 
                 self.master_server.rename_chunks( source_dict, target_dict, source_path, target_path ) 
                 successful_chunk_rename = False
