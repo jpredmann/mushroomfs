@@ -86,8 +86,19 @@ class MushroomMaster(Pyro.core.ObjBase):
             self.connect_chunk_server( chunk_server )
             dir_dict = self.chunk_server.readdir()
             logging.debug( dir_dict )
-   
-    
+            file_list = dir_dict[ 'files' ]
+            size_list = dir_dict[ 'size' ]
+            
+            chunk_ids_list = []
+            for file in file_list:
+                logging.debug( 'in second for loop' )
+                uuid_string, file_path = file.split( "--" )
+                logging.debug( 'split file name' )
+                uuid = time_uuid.TimeUUID( uuid_string )
+                logging.debug( 'uuid: ' )
+                logging.debug( uuid )
+                chunk_ids_list.append( ( uuid, file_path ) )        
+            logging.debug( chunk_ids_list )
     ###########################################
     ### Routine: init_chunk_server_table    ###
     ###                                     ###
