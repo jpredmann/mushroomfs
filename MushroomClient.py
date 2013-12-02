@@ -150,7 +150,7 @@ class MushroomClient(Fuse):
         self.connected_master = False
         
         #Attempt to rebind to the master server
-        self.master_server.rebindURI()
+        #self.master_server.rebindURI()
         
         #call method to connect to the master server again 
         self.connect_master_server()
