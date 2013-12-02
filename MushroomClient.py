@@ -364,7 +364,6 @@ class MushroomClient(Fuse):
                             source_dict[ chunk_location ].append( chunk_id )
                             target_dict[ chunk_location ].append( ( uuid, target_name ) )
 
-                self.master_server.rename_chunks( source_dict, target_dict, source_path, target_path ) 
                 successful_chunk_rename = False
 
                 while not successful_chunk_rename:
@@ -399,6 +398,8 @@ class MushroomClient(Fuse):
                 self._reinitialize()
                 
         #return the read binary data to FUSE
+        self.master_server.rename_chunks( source_dict, target_dict, source_path, target_path ) 
+
         return None
 
             
