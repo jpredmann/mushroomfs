@@ -55,7 +55,7 @@ class MushroomChunk( Pyro.core.ObjBase ):
     def rename( self, source_list, target_list ):
     
         try:
-            for source_chunk_id, target_chunk_is in zip( source_list, target_list ):
+            for source_chunk_id, target_chunk_id in zip( source_list, target_list ):
                 source_path = str( source_chunk_id[0] ) + "--" + source_chunk_id[1]
                 target_path = str( target_chunk_id[0] ) + "--" + target_chunk_id[1]
                 op_result = os.rename( self.root + source_path, self.root + target_path )
