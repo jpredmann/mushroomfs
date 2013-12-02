@@ -90,6 +90,10 @@ class MushroomChunk( Pyro.core.ObjBase ):
                 os.unlink( self.root + chunk_name )
         except:
             return -errno.EACCES
+
+    def readdir( self ):
+
+        return os.listdir( self.root )
         
 
 # Main program.
