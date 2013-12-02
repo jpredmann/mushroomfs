@@ -398,7 +398,7 @@ class MushroomClient(Fuse):
                 self._reinitialize()
                 
         #return the read binary data to FUSE
-        #self.master_server.rename_chunks( source_dict, target_dict, source_path, target_path ) 
+        self.master_server.rename_chunks( source_dict, target_dict, source_path, target_path ) 
 
         return None
 
