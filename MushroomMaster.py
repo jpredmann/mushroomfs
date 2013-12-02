@@ -206,8 +206,10 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         self.file_table[ target_path ] = sorted_new_chunk_ids_list
         logging.debug( 'added new file_table entry' )
+        logging.debug( self.file_table[ target_path ] )
         self.file_table[ target_path + 'size' ] = self.file_table[ source_path + 'size' ]
         logging.debug( 'added new file_table size entry' )
+        logging.debug( self.file_table[ target_path + 'size'] )
         del self.file_table[ source_path ]
         logging.debug( 'removed old file_table entry' )
         del self.file_table[ source_path + 'size' ]
