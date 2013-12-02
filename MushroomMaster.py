@@ -106,11 +106,17 @@ class MushroomMaster(Pyro.core.ObjBase):
                 self.chunk_table[ uuid ].append( chunk_server )
 
                 if path not in self.file_table.keys():
+                    logging.debug( 'creating entry in file_table for: ' )
+                    logging.debug( path )
                     self.file_table[ path ] = []
                     self.file_table[ path + 'size' ] = 0
                 if chunk_id not in self.file_table[ path ]:
+                    logging.debug( 'adding to file_table: ' )
+                    logging.debug( chunk_id )
                     self.file_table[ path ].append( chunk_id )
+                    logging.debug( 'chunk added' )
                     self.file_table[ path + 'size' ] = self.file_table[ path + 'size' ] + int( file_size )
+                    logging.debug( 'incremented file size' )
                 dir = os.path.dirname( self.root + path )
                 if not os.path.exists( dir ):
                     os.mkdirs( dir )
