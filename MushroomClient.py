@@ -1007,7 +1007,7 @@ class MushroomClient(Fuse):
                             #contact master & using ID get the location of this chunk
                             chunk_locations_list = client.master_server.get_chunkloc( uuid )
                             logging.debug( 'got chunk_location_list' )
-                            logging.debug( chunk_location_list )
+                            logging.debug( chunk_locations_list )
                             successful_chunk_read = False
                             #chunk_location_index = 0
 
