@@ -1114,12 +1114,8 @@ class MushroomClient(Fuse):
             #writing status with chunk servers
             successful_chunk = False
             #splice original data into chunks where size of chunks defined by master
-            singular_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
-            data_chunks_list = []
-            replication_factor = 3
+            data_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
-            for chunk in singular_chunks_list:
-                data_chunks_list.extend( [chunk]*replication_factor )
             actual_writes = {}
             chunk_server_list = [] 
             #continue until we are successful & done with master
@@ -1162,6 +1158,23 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+
+
+                            chunk_location = chunk_server_list[ chunk_server_index + 1 ]
+                            #connect to that chunk server
+                            client.connect_chunk_server( chunk_location )
+                            #write that chunk data to the chunk server
+                            client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+
+
+                            chunk_location = chunk_server_list[ chunk_server_index + 2 ]
+                            #connect to that chunk server
+                            client.connect_chunk_server( chunk_location )
+                            #write that chunk data to the chunk server
+                            client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+
+
+
                             #delete that chunk from list (in case of failure: only failed chunks retry)
                             del data_chunks_list[ 0 ]
                             
