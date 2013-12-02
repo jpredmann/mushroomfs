@@ -111,14 +111,14 @@ class MushroomMaster(Pyro.core.ObjBase):
                 if chunk_id not in self.file_table[ path ]:
                     self.file_table[ path ].append( chunk_id )
                     self.file_table[ path + 'size' ] = self.file_table[ path + 'size' ] + int( file_size )
-                 dir = os.path.dirname( self.root + path )
-                 if not os.path.exists( dir ):
-                     os.mkdirs( dir )
+                dir = os.path.dirname( self.root + path )
+                if not os.path.exists( dir ):
+                    os.mkdirs( dir )
 
-                 if not os.path.exists( self.root + path ):
-                     fd = os.open( self.root + path, os.O_CREAT|os.O_RDWR )
-                     os.write( fd, "updating" )
-                     os.close( fd )
+                if not os.path.exists( self.root + path ):
+                    fd = os.open( self.root + path, os.O_CREAT|os.O_RDWR )
+                    os.write( fd, "updating" )
+                    os.close( fd )
             logging.debug( 'chunk_ids_list' )
             logging.debug( chunk_ids_list )
 
