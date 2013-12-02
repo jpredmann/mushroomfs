@@ -1023,8 +1023,8 @@ class MushroomClient(Fuse):
                                     logging.debug( 'connected to chunk server' )
                                     #Read the chunk data from chunk server
                                     data_chunk = client.chunk_server.read( chunk_name )
-                                    logging.debug( 'got data_chunk: ' )
-                                    logging.debug( data_chunk )
+                                    logging.debug( 'got data_chunk length: ' )
+                                    logging.debug( len( data_chunk ) )
                                     #add this chunk's data to the list
                                     data_chunks_list.append( data_chunk )
                                     successful_chunk_read = True
@@ -1033,7 +1033,11 @@ class MushroomClient(Fuse):
                                 except:
                                     logging.debug( 'EXCEPTION READ CHUNK SERVER' )
                                     #chunk_location_index = ( chunk_location_index + 1 ) % len( chunk_location )
+                                    logging.debug( 'old chunk_location_list' )
+                                    loggind.debug( chunk_location_list )
                                     chunk_location_list.push( chunk_location_pop() )
+                                    logging.debug( 'new chunk location list' )
+                                    logging.debug( chunk_location_list )
                                     #client.reconnect_chunk_server()
                         
                         #convert file data into binary data
