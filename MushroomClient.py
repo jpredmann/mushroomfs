@@ -1152,12 +1152,15 @@ class MushroomClient(Fuse):
                             chunk_name = uuid + "--" + file_path
                             #Change which chunk server will get the next chunk (cycles through chunk severs)
                             chunk_server_index = index % len( chunk_server_list )
+
+
                             #from list get location of where chunk should go (i.e. which chunkserver)
                             chunk_location = chunk_server_list[ chunk_server_index ]
                             #connect to that chunk server
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+                            actual_writes[ chunk_id ] = chunk_location
 
 
                             chunk_location = chunk_server_list[ chunk_server_index + 1 ]
@@ -1165,6 +1168,7 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+                            actual_writes[ chunk_id ] = chunk_location
 
 
                             chunk_location = chunk_server_list[ chunk_server_index + 2 ]
@@ -1172,15 +1176,14 @@ class MushroomClient(Fuse):
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
+                            actual_writes[ chunk_id ] = chunk_location
 
 
 
                             #delete that chunk from list (in case of failure: only failed chunks retry)
                             del data_chunks_list[ 0 ]
                             
-                            #add the chunk id and its chunk server to the dictionary of actual writes
-                            actual_writes[ chunk_id ] = chunk_location
-                         #finished with writing  
+                        #finished with writing  
                         successful_chunk = True
                     
                     #In case of failure due to inactive server, then remove that server from list & try again
