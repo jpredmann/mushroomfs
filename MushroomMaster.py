@@ -90,7 +90,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             size_list = dir_dict[ 'size' ]
             
             chunk_ids_list = []
-            for file in file_list:
+            for file, file_size in zip( file_list, size_list ):
                 logging.debug( 'in second for loop' )
                 uuid_string, file_path = file.split( "--" )
                 logging.debug( 'split file name' )
@@ -98,12 +98,27 @@ class MushroomMaster(Pyro.core.ObjBase):
                 path = base64.urlsafe_b64decode( file_path )
                 logging.debug( 'uuid: ' )
                 logging.debug( uuid )
-                chunk_ids_list.append( ( uuid, file_path ) )        
+                chunk_id = ( uuid, file_path )
+                chunk_ids_list.append( chunk_id )        
 
                 if uuid not in self.chunk_table.keys():
                     self.chunk_table[ uuid ] = []
                 self.chunk_table[ uuid ].append( chunk_server )
 
+                if path not in self.file_table.keys():
+                    self.file_table[ path ] = []
+                    self.file_table[ path + 'size' ] = 0
+                if chunk_id not in self.file_table[ path ]:
+                    self.file_table[ path ].append( chunk_id )
+                    self.file_table[ path + 'size' ] = self.file_table[ path + 'size' ] + int( file_size )
+                 dir = os.path.dirname( self.root + path )
+                 if not os.path.exists( dir ):
+                     os.mkdirs( dir )
+
+                 if not os.path.exists( self.root + path ):
+                     fd = os.open( self.root + path, os.O_CREAT|os.O_RDWR )
+                     os.write( fd, "updating" )
+                     os.close( fd )
             logging.debug( 'chunk_ids_list' )
             logging.debug( chunk_ids_list )
 
