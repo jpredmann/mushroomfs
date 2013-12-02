@@ -1007,7 +1007,7 @@ class MushroomClient(Fuse):
                             #contact master & using ID get the location of this chunk
                             chunk_locations_list = client.master_server.get_chunkloc( uuid )
                             successful_chunk_read = False
-                            chunk_location_index = 0
+                            #chunk_location_index = 0
 
                             while not successful_chunk_read:
                             
@@ -1032,8 +1032,9 @@ class MushroomClient(Fuse):
                                 #In case of chunk server connection failure, reconnect
                                 except:
                                     logging.debug( 'EXCEPTION READ CHUNK SERVER' )
-                                    chunk_location_index = ( chunk_location_index + 1 ) % len( chunk_location )
-                                    client.reconnect_chunk_server()
+                                    #chunk_location_index = ( chunk_location_index + 1 ) % len( chunk_location )
+                                    chunk_location_list.push( chunk_location_pop() )
+                                    #client.reconnect_chunk_server()
                         
                         #convert file data into binary data
                         data = b"".join( data_chunks_list )
