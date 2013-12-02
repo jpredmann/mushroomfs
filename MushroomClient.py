@@ -1024,7 +1024,7 @@ class MushroomClient(Fuse):
                                     #Read the chunk data from chunk server
                                     data_chunk = client.chunk_server.read( chunk_name )
                                     logging.debug( 'got data_chunk: ' )
-                                    logging.debug* data_chunk )
+                                    logging.debug( data_chunk )
                                     #add this chunk's data to the list
                                     data_chunks_list.append( data_chunk )
                                     successful_chunk_read = True
