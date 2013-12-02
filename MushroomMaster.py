@@ -55,8 +55,36 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
         self.chunk_servers = ['MushroomChunkOne', 'MushroomChunkTwo', 'MushroomChunkThree', 'MushroomChunkFour' ]
         self.init_chunk_server_table()
+        self.connect_chunk = False
 
         Pyro.core.ObjBase.__init__( self )
+        self.recovery()
+
+
+    def connect_chunk_server( self, chunk_server_name ):
+        logging.debug( 'CONNECT_CHUNK_SERVER' )
+
+        try:
+
+            protocol = "PYRONAME://192.168.1.22/" + chunk_server_name
+
+            self.chunk_server = Pyro.core.getProxyForURI( protocol )
+
+            if self.chunk_server.getattr( '/' ):
+                self.connect_chunk = True
+                
+            else:
+                raise
+
+        except Exception, error:
+            print str( error )
+
+    def recovery( self ):
+
+        for chunk_server in self.chunk_servers:
+            self.connect_chunk_server( chunk_server )
+            dir_dict = self.chunk_server.readdir()
+            logging.debug( dir_dict )
    
     
     ###########################################

@@ -92,8 +92,19 @@ class MushroomChunk( Pyro.core.ObjBase ):
             return -errno.EACCES
 
     def readdir( self ):
+        file_size_list = []
+        dir_list = os.listdir( self.root )
+        recovery_data = {}
 
-        return os.listdir( self.root )
+        stripped_dir_list = [ item for item in dir_list if item[0] != '.' ]
+        for item in stripped_dir_list:
+            file_size = os.path.getsize( self.root + item )
+            file_size_list.append( file_size )
+
+        recovery_data[ 'size'] = file_size_list
+        recovery_data[ 'files' ] = dir_list
+
+        return recovery_data
         
 
 # Main program.
