@@ -81,6 +81,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     def recovery( self ):
 
+        logging.debug( 'RECOVERY' )
         for chunk_server in self.chunk_servers:
             self.connect_chunk_server( chunk_server )
             dir_dict = self.chunk_server.readdir()
