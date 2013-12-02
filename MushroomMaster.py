@@ -108,9 +108,11 @@ class MushroomMaster(Pyro.core.ObjBase):
             logging.debug( chunk_ids_list )
 
             self.chunk_server_table[ chunk_server ] = chunk_ids_list
-            logging.debug( 'Meta-data tables' )
-            logging.debug( self.chunk_server_table)
-            logging.debug( self.chunk_table )
+        logging.debug( 'Meta-data tables' )
+        logging.debug( '\nSERVER_TABLE' )
+        logging.debug( self.chunk_server_table)
+        logging.debug( '\nCHUNK_TABLE' )
+        logging.debug( self.chunk_table )
             
 
 
