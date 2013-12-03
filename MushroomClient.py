@@ -824,6 +824,7 @@ class MushroomClient(Fuse):
                     #Set param as this file's class instance var
                     self.path = path
                     self.flags = flags
+                    self.data_store = []
                     self.file_descriptor = ret
                     if mode:
                         self.mode = mode[0]
@@ -891,6 +892,8 @@ class MushroomClient(Fuse):
             logging.debug( 'RELEASE' )    
             client.last_offset = 0
         
+            if len( self.data_store ):
+                self.write_data_store()
             #initialize operation as not successful
             successful = False
             
@@ -1056,11 +1059,18 @@ class MushroomClient(Fuse):
             return data
             
 
+        def write( self, buf, offset ):
+
+            self.data_store.append( buf )
+
+            return len( buf )
+
+
         ###############################
         ### Routine: MF.write       ###
         ###############################
 
-        def write( self, buf, offset ):
+        def write_data_store( self ):
             #initialize operation as not successful
             successful = False
             actual_writes = {}
@@ -1083,11 +1093,11 @@ class MushroomClient(Fuse):
                         #contact master and get the chunk size 
                         chunk_size = client.master_server.get_chunk_size()
                         #call to subroutine, returns the # of chunks to split data into
-                        num_chunks = self.get_num_chunks( len( buf), chunk_size )
+                        num_chunks = self.get_num_chunks( len( self.data_store ), chunk_size )
                         #contact master to generate a unique id for each chunk
-                        chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks, len( buf ) )
+                        chunk_ids_list = client.master_server.generate_chunk_ids( self.file_descriptor, self.path, num_chunks, len( self.data_store ) )
                         #call to subroutine to write each chunk to the appropriate chunk server
-                        actual_writes = self.write_chunks( chunk_ids_list, buf, chunk_size )
+                        actual_writes = self.write_chunks( chunk_ids_list, chunk_size )
                         logging.debug( 'in write, actual_writes' )
                         logging.debug( actual_writes )
                         
@@ -1110,8 +1120,6 @@ class MushroomClient(Fuse):
                 except:
                     logging.debug( 'EXCEPTION WRITE REGISTER CHUNKS' )
                     client.reconnect_master_server()
-            #return the length of buffer to FUSE 
-            return len( buf )
 
             
         ######################################
@@ -1120,7 +1128,7 @@ class MushroomClient(Fuse):
         ### Used by:   MF.write            ###
         ######################################
             
-        def write_chunks(self, chunk_ids_list, buf, chunk_size ):
+        def write_chunks(self, chunk_ids_list, chunk_size ):
             logging.debug( 'WRITE_CHUNKS' )    
         
             #writing status with master
@@ -1129,7 +1137,7 @@ class MushroomClient(Fuse):
             #writing status with chunk servers
             successful_chunk = False
             #splice original data into chunks where size of chunks defined by master
-            data_chunks_list = [ buf[index:index + chunk_size] for index in range(0, len( buf ), chunk_size ) ]
+            data_chunks_list = [ self.data_store[index:index + chunk_size] for index in xrange(0, len( self.data_store ), chunk_size ) ]
             #init dict holding chunks ids & servers that have already successfully written (in case of fail)
             actual_writes = {}
             chunk_server_list = [] 
@@ -1160,7 +1168,7 @@ class MushroomClient(Fuse):
                     #Try to write all chunks to the chunk servers using round robin (from list)
                     try:
                         #for each chunk of data
-                        for index in range( 0, len( data_chunks_list ) ):
+                        for index in xrange( 0, len( data_chunks_list ) ):
                             #get the key that associates to that chunk
                             chunk_id = chunk_ids_list[ index ]
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
