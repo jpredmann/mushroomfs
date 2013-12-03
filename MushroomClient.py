@@ -824,7 +824,7 @@ class MushroomClient(Fuse):
                     #Set param as this file's class instance var
                     self.path = path
                     self.flags = flags
-                    self.data_store = []
+                    self.data_store_list = []
                     self.file_descriptor = ret
                     if mode:
                         self.mode = mode[0]
@@ -893,6 +893,7 @@ class MushroomClient(Fuse):
             client.last_offset = 0
         
             if len( self.data_store ):
+                self.data_store = b"".join( self.data_store_list )
                 self.write_data_store()
             #initialize operation as not successful
             successful = False
@@ -1061,7 +1062,7 @@ class MushroomClient(Fuse):
 
         def write( self, buf, offset ):
 
-            self.data_store.append( buf )
+            self.data_store_list.append( buf )
 
             return len( buf )
 
