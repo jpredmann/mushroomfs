@@ -219,7 +219,8 @@ class MushroomClient(Fuse):
             try:
                 #call to the master server to perform operation
                 attr = self.master_server.getattr( path  )
-                
+                logging.debug( 'stats object: ' )
+                logging.debug( attr ) 
                 #change operation status to successul & exit loop
                 successful = True
             

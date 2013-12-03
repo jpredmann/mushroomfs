@@ -431,6 +431,8 @@ class MushroomMaster(Pyro.core.ObjBase):
             stats_list = list( op_result )
             stats_list[ stat.ST_SIZE ] = file_size
             op_result = posix.stat_result( stats_list )
+            logging.debug( 'stats object: ' )
+            logging.debug( op_result )
         except:
             logging.debug( 'EXCEPTION FTRUNCATE' )
             op_result = -errno.EACCES
@@ -517,7 +519,8 @@ class MushroomMaster(Pyro.core.ObjBase):
                 stats_list = list( op_result )
                 stats_list[ stat.ST_SIZE ] = file_size
                 op_result = posix.stat_result( stats_list )
-                
+                logging.debug( 'stats object: ' )
+                logging.debug( op_result ) 
         except:
             logging.debug( 'EXCEPTION GETATTR' )
             op_result = -errno.ENOENT
