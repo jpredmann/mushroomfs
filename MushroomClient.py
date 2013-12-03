@@ -4,7 +4,7 @@ import os, sys, threading, time, time_uuid
 from errno import *
 from stat import *
 from operator import itemgetter
-
+# init logging
 logging.basicConfig( filename='mushroom_client.log', level=logging.DEBUG )
 
 
