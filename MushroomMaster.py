@@ -511,6 +511,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     def getattr( self, path ):
         logging.debug( 'GETATTR' )
+        logging,debug( path )
     
         try:
             op_result = os.lstat( self.root + path[1:] )

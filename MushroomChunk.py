@@ -16,6 +16,7 @@ webpage http://pyro.sourceforge.net.
 
 # The chunk server class.
 class MushroomChunk( Pyro.core.ObjBase ):
+
     def __init__( self, root ):
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
