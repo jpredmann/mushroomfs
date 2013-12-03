@@ -48,8 +48,8 @@ class MushroomMaster(Pyro.core.ObjBase):
         
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
-        #self.chunksize = 1048576        # Max size of chunks in bytes (1MB)
-        self.chunksize = 131072
+        self.chunksize = 1048576        # Max size of chunks in bytes (1MB)
+        #self.chunksize = 131072
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held

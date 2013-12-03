@@ -67,7 +67,7 @@ class MushroomClient(Fuse):
         self.connected_master = False   # Connection status for Master
         self.connected_chunk = False    # Connection status for Chunk
         self.timestamp = 0              # Timestamp for data syncing
-        self.last_offset = 0 
+        #self.last_offset = 0 
     ###############################################
     ### Subroutine: Connect Master Server       ###
     ###                                         ###
@@ -892,7 +892,7 @@ class MushroomClient(Fuse):
 
         def release( self, flags ):
             logging.debug( 'RELEASE' )    
-            client.last_offset = 0
+            #client.last_offset = 0
         
             if len( self.data_store_list ):
                 self.data_store = b"".join( self.data_store_list )
@@ -968,12 +968,18 @@ class MushroomClient(Fuse):
             #return the master's resultant to FUSE 
             return ftrunc_result
 
+        def read( self, size, offset ):
+
+            self.read_data_store()
+            return self.data_store[ offset, offset + size ]
+
+
 
         ##############################
         ### Routine: MF.read       ###
         ##############################
 
-        def read( self, size, offset ):
+        def read_data_store( self, size ):
             logging.debug( 'READ' )    
             #initialize operation as not successful
             successful = False
@@ -1004,12 +1010,12 @@ class MushroomClient(Fuse):
 
                         chunk_size = client.master_server.get_chunk_size()
                         #call to subroutine, returns the # of chunks to split data into
-                        previous_num_chunks = self.get_num_chunks( client.last_offset, chunk_size )
+                        #previous_num_chunks = self.get_num_chunks( client.last_offset, chunk_size )
                         num_chunks = self.get_num_chunks( size, chunk_size )
-                        client.last_offset = client.last_offset + size
+                        #client.last_offset = client.last_offset + size
 
                         #for every chunk ID for this file
-                        for chunk_id in sorted_chunk_ids_list[previous_num_chunks:num_chunks+previous_num_chunks]:
+                        for chunk_id in sorted_chunk_ids_list:
                             #Chunk IDs are tuples:(TimeUUID, path);combine them for filename
                             uuid = chunk_id[0]
                             file_path = chunk_id[1]
@@ -1061,7 +1067,7 @@ class MushroomClient(Fuse):
                     self._reinitialize()
                 
             #return the read binary data to FUSE
-            return data
+            self.data_store = data
             
 
         def write( self, buf, offset ):
