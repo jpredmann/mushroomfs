@@ -1202,16 +1202,18 @@ class MushroomClient(Fuse):
                             actual_writes[ chunk_id ].append ( chunk_location )
                             logging.debug( 'wrote to chunk server' )
                             
-
-                            chunk_location = chunk_server_list[ chunk_server_index + 1 ]
+                            replication_one_index = ( chunk_server_index + 1) % len( chunk_server_list )
+                            chunk_location = chunk_server_list[ replication_one_index ]
+                            logging.debug( 'second write to chunk_location' )
+                            logging.debug( chunk_location )
                             #connect to that chunk server
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
                             actual_writes[ chunk_id ].append( chunk_location )
 
-
-                            chunk_location = chunk_server_list[ chunk_server_index + 2 ]
+                            replication_two_index = ( chunk_server_index + 2) % len( chunk_server_list )
+                            chunk_location = chunk_server_list[ replication_two_index ]
                             #connect to that chunk server
                             client.connect_chunk_server( chunk_location )
                             #write that chunk data to the chunk server
