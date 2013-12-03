@@ -970,7 +970,7 @@ class MushroomClient(Fuse):
 
         def read( self, size, offset ):
 
-            self.read_data_store()
+            self.read_data_store( size )
             return self.data_store[ offset, offset + size ]
 
 
