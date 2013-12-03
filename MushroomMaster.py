@@ -876,7 +876,7 @@ def main():
         Pyro.core.initServer(banner=0)
 
         #find the nameserver
-        ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
+        ns=Pyro.naming.NameServerLocator().getNS(host='137.30.124.64')
         
         ip = netifaces.ifaddresses('eth0')[2][0]['addr']
         daemon = Pyro.core.Daemon('PYRO',ip)
