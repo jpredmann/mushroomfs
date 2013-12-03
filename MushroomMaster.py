@@ -66,7 +66,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         try:
 
-            protocol = "PYRONAME://192.168.1.22/" + chunk_server_name
+            protocol = "PYRONAME://137.30.124.64/" + chunk_server_name
 
             self.chunk_server = Pyro.core.getProxyForURI( protocol )
 
