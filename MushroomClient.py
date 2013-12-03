@@ -1229,7 +1229,7 @@ class MushroomClient(Fuse):
                     
                     except Exception, error:
                         logging.debug( 'EXCEPTION WRITE_CHUNKS WRITING CHUNKS' )
-                        del chunk_server_list[ chunk_server_index ]
+                        #del chunk_server_list[ chunk_server_index ]
              
             #return the dict back to write method
             return actual_writes
