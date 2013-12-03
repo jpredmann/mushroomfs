@@ -1356,6 +1356,10 @@ def main():
 
     # Initialize the PyGFS client object.
     client = MushroomClient(version=fuse.__version__, dash_s_do='setsingle')
+
+    client.fuse_args.add( 'big_writes' )
+    client.fuse_args.add( 'large_read' )
+    
     # Add custom options.
     client.parser.add_option(mountopt="host", metavar="HOSTNAME", default="127.0.0.1",
         help="The Mushroom server hostname [default: 127.0.0.1]")
