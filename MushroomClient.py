@@ -209,6 +209,7 @@ class MushroomClient(Fuse):
 
     def getattr( self, path ):
         logging.debug( 'GETATTR' )
+        logging.debug( path )
         #initialize operation as not successful
         successful = False
     
@@ -893,7 +894,7 @@ class MushroomClient(Fuse):
             logging.debug( 'RELEASE' )    
             client.last_offset = 0
         
-            if len( self.data_store ):
+            if len( self.data_store_list ):
                 self.data_store = b"".join( self.data_store_list )
                 logging.debug( 'data_store is now: ' )
                 logging.debug( len( self.data_store ) )
