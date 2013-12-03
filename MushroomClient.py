@@ -1189,13 +1189,19 @@ class MushroomClient(Fuse):
 
                             actual_writes[ chunk_id ] = []
                             #from list get location of where chunk should go (i.e. which chunkserver)
+                            logging.debug( 'getting chunk_location ' )
                             chunk_location = chunk_server_list[ chunk_server_index ]
+                            logging.debug( chunk_location )
                             #connect to that chunk server
+                            logging.debug( 'connecting to chunk server' )
                             client.connect_chunk_server( chunk_location )
+                            logging.debug( 'connected to chunk server' )
                             #write that chunk data to the chunk server
+                            logging.debug( 'writing to chunk server' )
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
                             actual_writes[ chunk_id ].append ( chunk_location )
-
+                            logging.debug( 'wrote to chunk server' )
+                            """
 
                             chunk_location = chunk_server_list[ chunk_server_index + 1 ]
                             #connect to that chunk server
@@ -1212,7 +1218,7 @@ class MushroomClient(Fuse):
                             client.chunk_server.write( data_chunks_list[ 0 ], chunk_name )
                             actual_writes[ chunk_id ].append( chunk_location )
 
-
+                            """
                             #delete that chunk from list (in case of failure: only failed chunks retry)
                             del data_chunks_list[ 0 ]
                             
