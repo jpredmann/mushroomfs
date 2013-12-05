@@ -83,7 +83,7 @@ class MushroomClient(Fuse):
         try:
         
             # Set protocol to use for Pyro RPC (secured or not)
-            protocol = "PYRONAME://137.30.124.64/MushroomFS"
+            protocol = "PYRONAME://191.168.1.22/MushroomFS"
                 
             # Get the master server proxy object from Pyro RPC system
             self.master_server = Pyro.core.getProxyForURI( protocol)

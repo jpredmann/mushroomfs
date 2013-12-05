@@ -66,7 +66,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         try:
 
-            protocol = "PYRONAME://137.30.124.64/" + chunk_server_name
+            protocol = "PYRONAME://191.168.1.22/" + chunk_server_name
 
             self.chunk_server = Pyro.core.getProxyForURI( protocol )
 
@@ -876,7 +876,7 @@ def main():
         Pyro.core.initServer(banner=0)
 
         #find the nameserver
-        ns=Pyro.naming.NameServerLocator().getNS(host='137.30.124.64')
+        ns=Pyro.naming.NameServerLocator().getNS(host='191.168.1.22')
         
         ip = netifaces.ifaddresses('eth0')[2][0]['addr']
         daemon = Pyro.core.Daemon('PYRO',ip)
