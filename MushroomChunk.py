@@ -16,11 +16,25 @@ webpage http://pyro.sourceforge.net.
 
 # The chunk server class.
 class MushroomChunk( Pyro.core.ObjBase ):
+"""
+Class implementing the data chunk server
+"""
+
 
     def __init__( self, root ):
+    """
+    Constructor
+    """
+
+        # Set the directory in the server that will be used to store the data chunks
         self.root = os.path.abspath( root ) + '/'
+        # Change to the directory set above
         os.chdir( self.root )
+        # Register the chunk server object with Pyro for RPC
         Pyro.core.ObjBase.__init__( self )
+
+    # END __init__
+
 
     def getattr( self, path ):
     
