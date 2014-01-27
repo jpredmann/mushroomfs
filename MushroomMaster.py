@@ -53,7 +53,7 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
-        self.chunk_servers = ['MushroomChunkOne', 'MushroomChunkTwo', 'MushroomChunkThree', 'MushroomChunkFour' ]
+        self.chunk_servers = ['MushroomChunkOne', 'MushroomChunkTwo', 'MushroomChunkThree' ]
         self.init_chunk_server_table()
         self.connect_chunk = False
 
@@ -66,7 +66,7 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         try:
 
-            protocol = "PYRONAME://192.168.1.22/" + chunk_server_name
+            protocol = "PYRONAME://137.30.122.76/" + chunk_server_name
 
             self.chunk_server = Pyro.core.getProxyForURI( protocol )
 
@@ -876,9 +876,9 @@ def main():
         Pyro.core.initServer(banner=0)
 
         #find the nameserver
-        ns=Pyro.naming.NameServerLocator().getNS(host='192.168.1.22')
+        ns=Pyro.naming.NameServerLocator().getNS(host='137.30.122.76')
         
-        ip = netifaces.ifaddresses('eth0')[2][0]['addr']
+        ip = netifaces.ifaddresses('en0')[2][0]['addr']
         daemon = Pyro.core.Daemon('PYRO',ip)
             
         daemon.useNameServer(ns)
