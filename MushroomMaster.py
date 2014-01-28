@@ -1,34 +1,31 @@
-import math
-import time_uuid    #Used to generate unique chunk ids/keys
-import os           #Used to write data out
-import time         #Used to create timestamp for archiving deleted files
-import operator     #Used in a Master 'tester method' (Server.dump_metadata())
-import sys
-import argparse
-import signal
-import re
-import getopt
-import errno
-import logging
-import pickle
-import base64
-import stat
-import posix
-import netifaces
+import time_uuid    # Used to generate unique chunk ids/keys
+import os           # Used to write data out
+import time         # Used to create timestamp for archiving deleted files
+import operator     # Used in a Master 'tester method' (Server.dump_metadata())
+import sys          # Used to report erros to standard error and exit
+import argparse     # Used to parse command line arguments
+import signal       # Used to signal the daemon process 
+import errno        # Used to return error codes to FUSE
+import logging      # Used for debugging
+import base64       # Used to encode the primary file's path for the data chunk file names
+import stat         # Used to process the attributes structure
+import posix        # Used to process the attributes structure
+import netifaces    
 from operator import itemgetter
 import itertools
 
 logging.basicConfig( filename='mushroom_server.log', level=logging.DEBUG )
 
+# 
 try:
     import Pyro.core, Pyro.naming
 except:
     print >> sys.stderr, """
-error: Pyro framework doesn't seem to be correctly installed!
+    error: Pyro framework doesn't seem to be correctly installed!
 
-Follow the instruction in the README file to install it, or go the Pyro
-webpage http://pyro.sourceforge.net.
-"""
+    Follow the instruction in the README file to install it, or go the Pyro
+    webpage http://pyro.sourceforge.net.
+    """
     sys.exit(1)
 
 
@@ -49,7 +46,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         self.root = os.path.abspath( root ) + '/'
         os.chdir( self.root )
         self.chunksize = 1048576        # Max size of chunks in bytes (1MB)
-        #self.chunksize = 131072
         self.file_table = {}            # Look-up table to map from file paths to chunk ids
         self.chunk_table = {}           # Look-up table to map chunk id to chunk server
         self.chunk_server_table = {}    # Look-up table to map chunk servers to chunks held
@@ -85,19 +81,14 @@ class MushroomMaster(Pyro.core.ObjBase):
         for chunk_server in self.chunk_servers:
             self.connect_chunk_server( chunk_server )
             dir_dict = self.chunk_server.readdir()
-            logging.debug( dir_dict )
             file_list = dir_dict[ 'files' ]
             size_list = dir_dict[ 'size' ]
             
             chunk_ids_list = []
             for file, file_size in zip( file_list, size_list ):
-                logging.debug( 'in second for loop' )
                 uuid_string, file_path = file.split( "--" )
-                logging.debug( 'split file name' )
                 uuid = time_uuid.TimeUUID( uuid_string )
                 path = base64.urlsafe_b64decode( file_path )
-                logging.debug( 'uuid: ' )
-                logging.debug( uuid )
                 chunk_id = ( uuid, file_path )
                 chunk_ids_list.append( chunk_id )        
 
@@ -106,17 +97,11 @@ class MushroomMaster(Pyro.core.ObjBase):
                 self.chunk_table[ uuid ].append( chunk_server )
 
                 if path not in self.file_table.keys():
-                    logging.debug( 'creating entry in file_table for: ' )
-                    logging.debug( path )
                     self.file_table[ path ] = []
                     self.file_table[ path + 'size' ] = 0
                 if chunk_id not in self.file_table[ path ]:
-                    logging.debug( 'adding to file_table: ' )
-                    logging.debug( chunk_id )
                     self.file_table[ path ].append( chunk_id )
-                    logging.debug( 'chunk added' )
                     self.file_table[ path + 'size' ] = self.file_table[ path + 'size' ] + int( file_size )
-                    logging.debug( 'incremented file size' )
                 dir = os.path.dirname( self.root + path )
                 if not os.path.exists( dir ):
                     os.mkdirs( dir )
@@ -125,15 +110,8 @@ class MushroomMaster(Pyro.core.ObjBase):
                     fd = os.open( self.root + path, os.O_CREAT|os.O_RDWR )
                     os.write( fd, "updating" )
                     os.close( fd )
-            logging.debug( 'chunk_ids_list' )
-            logging.debug( chunk_ids_list )
 
             self.chunk_server_table[ chunk_server ] = chunk_ids_list
-        logging.debug( 'Meta-data tables' )
-        logging.debug( '\nSERVER_TABLE' )
-        logging.debug( self.chunk_server_table)
-        logging.debug( '\nCHUNK_TABLE' )
-        logging.debug( self.chunk_table )
             
 
 
@@ -196,9 +174,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         # Adds file path to the file table, if it was not present already
         # stores, potentially over-writing, a list of chunk ids, where those chunks
         # compose the file.
-        #self.file_table[path] = chunk_ids
-        #with open( path, 'wb' ) as file:
-            #pickle.dump( chunk_ids, file )
         
         os.write( file_descriptor, "updating" )
         self.file_table[ path ].extend( chunk_ids )
@@ -249,52 +224,21 @@ class MushroomMaster(Pyro.core.ObjBase):
 
         logging.debug( 'RENAME_CHUNKS' ) 
         for chunk_server  in  source_dict.keys():
-            logging.debug( 'in first for loop' )
             source_list = source_dict[ chunk_server ]
-            logging.debug( 'grabed source list of chunk ids' )
-            logging.debug( source_list )
             target_list = target_dict[ chunk_server ]
-            logging.debug( 'grabbed target list of chunk ids' )
-            logging.debug( target_list )
             chunk_ids_list = self.chunk_server_table[ chunk_server ]
             self.chunk_server_table[ chunk_server ] = [ chunk for chunk in chunk_ids_list if chunk not in source_list ]
             self.chunk_server_table[ chunk_server ].extend( target_list )
-            logging.debug( 'updated chunk_server_table' )
         old_chunk_ids_list = self.file_table[ source_path ]
-        logging.debug( 'got old_chunk_ids_list' )
         sorted_old_chunk_ids_list = sorted( old_chunk_ids_list, key=itemgetter( 0 ) )
-        logging.debug( 'got sorted_old_chunk_ids_list' )
-        logging.debug( sorted_old_chunk_ids_list )
         new_chunk_ids_list = list( set( itertools.chain.from_iterable( target_dict.values() ) ) )
-        logging.debug( 'got new_chunk_ids_list' )
         sorted_new_chunk_ids_list = sorted( new_chunk_ids_list, key=itemgetter( 0 ) )
-        logging.debug( 'got sorted_new_chunk_ids_list' )
-        logging.debug( sorted_new_chunk_ids_list )
-
-        """
-        for old_chunk_id, new_chunk_id in zip( sorted_old_chunk_ids_list, sorted_new_chunk_ids_list ):
-            logging.debug( 'in second for loop' )
-            self.chunk_table[ new_chunk_id[0] ] = self.chunk_table[ old_chunk_id[0] ]
-            logging.debug( 'new compre old chunk_table entries' )
-            logging.debug( self.chunk_table[ new_chunk_id[0] )
-            logging.debug( self.chunk_table[ old_chunk_id[0] )
-            logging.debug( 'added new chunk_table entry' )
-            #del self.chunk_table[ old_chunk_id[0] ]
-            logging.debug( 'deleted old chunk_table entry' )
-        """
 
         self.file_table[ target_path ] = sorted_new_chunk_ids_list
-        logging.debug( 'added new file_table entry' )
-        logging.debug( self.file_table[ target_path ] )
         self.file_table[ target_path + 'size' ] = self.file_table[ source_path + 'size' ]
-        logging.debug( 'added new file_table size entry' )
-        logging.debug( self.file_table[ target_path + 'size'] )
         del self.file_table[ source_path ]
-        logging.debug( 'removed old file_table entry' )
         del self.file_table[ source_path + 'size' ]
-        logging.debug( 'removed old size' )
         os.rename( self.root + source_path, self.root + target_path )
-        logging.debug( 'finished rename' )
                 
     #######################################
     ### Routine: alloc_append           ###
@@ -410,7 +354,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.ftruncate( file_descriptor, length )
         except:
-            logging.debug( 'EXCEPTION FTRUNCATE' )
             op_result = -errno.EACCES
         
         return op_result
@@ -431,10 +374,7 @@ class MushroomMaster(Pyro.core.ObjBase):
             stats_list = list( op_result )
             stats_list[ stat.ST_SIZE ] = file_size
             op_result = posix.stat_result( stats_list )
-            logging.debug( 'stats object: ' )
-            logging.debug( op_result )
         except:
-            logging.debug( 'EXCEPTION FTRUNCATE' )
             op_result = -errno.EACCES
         
         return op_result
@@ -452,7 +392,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.close( os.dup( file_descriptor ) )
         except:
-            logging.debug( 'EXCEPTION FLUSH' )
             op_result = -errno.EACCES
         
         return op_result
@@ -474,7 +413,6 @@ class MushroomMaster(Pyro.core.ObjBase):
             else:
                 os.fsync( file_descriptor )
         except:
-            logging.debug( 'EXCEPTION FSYNC' )
             return -errno.EACCES
     
     
@@ -511,7 +449,6 @@ class MushroomMaster(Pyro.core.ObjBase):
 
     def getattr( self, path ):
         logging.debug( 'GETATTR' )
-        logging.debug( path )
     
         try:
             op_result = os.lstat( self.root + path[1:] )
@@ -520,10 +457,7 @@ class MushroomMaster(Pyro.core.ObjBase):
                 stats_list = list( op_result )
                 stats_list[ stat.ST_SIZE ] = file_size
                 op_result = posix.stat_result( stats_list )
-                logging.debug( 'stats object: ' )
-                logging.debug( op_result ) 
         except:
-            logging.debug( 'EXCEPTION GETATTR' )
             op_result = -errno.ENOENT
             
         return op_result
@@ -590,7 +524,6 @@ class MushroomMaster(Pyro.core.ObjBase):
                 
         # if not successful op_result holds the error code        
         except:
-            logging.debug( 'EXCEPTION OPEN' )
             op_result = -errno.ENOENT
         return op_result
     
@@ -601,7 +534,6 @@ class MushroomMaster(Pyro.core.ObjBase):
     ### Used by: Client.release   ###
     #################################
 
-    # TODO: Determine what if anything should be returned here
     def release( self, file_descriptor, flags ):
         logging.debug( 'RELEASE' )
     
@@ -610,7 +542,6 @@ class MushroomMaster(Pyro.core.ObjBase):
                 os.close( file_descriptor )
                 op_result = True
         except:
-            logging.debug( 'EXCEPTION RELEASE' )
             op_result =  -errno.ENOSYS
             
         return op_result
@@ -622,7 +553,6 @@ class MushroomMaster(Pyro.core.ObjBase):
     ### Used by: Client.truncate     ###
     ####################################
 
-    # TODO: return issues
     def truncate( self, path, length ):
         logging.debug( 'TRUNCATE' )
     
@@ -631,7 +561,6 @@ class MushroomMaster(Pyro.core.ObjBase):
             file.truncate( length )
             file.close()
         except:
-            logging.debug( 'EXCEPTION TRUNCATE' )
             return -errno.EACCES
 
 
@@ -647,7 +576,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.mkdir( self.root + path, mode )
         except:
-            logging.debug( 'EXCEPTION MKDIR' )
             op_result = -errno.EACCES
             
         return op_result
@@ -665,7 +593,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.rmdir( self.root + path )
         except:
-            logging.debug( 'EXCEPTION RMDIR' )
             op_result = -errno.EACCES
             
         return op_result
@@ -683,7 +610,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.symlink( source_path, self.root + target_path )
         except:
-            logging.debug( 'EXCEPTION SYMLINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -701,7 +627,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.link( source_path, self.root + target_path )
         except:
-            logging.debug( 'EXCEPTION LINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -719,7 +644,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.unlink( self.root + path )
         except:
-            logging.debug( 'EXCEPTION UNLINK' )
             op_result = -errno.EACCES
             
         return op_result
@@ -737,7 +661,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.rename( self.root + source_path, self.root + target_path )
         except:
-            logging.debug( 'EXCEPTION RENAME' )
             op_result = -errno.EACCES
             
         return op_result
@@ -755,7 +678,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.chmod( self.root + path, mode )
         except:
-            logging.debug( 'CHMOD' )
             op_result = -errno.EACCES
             
         return op_result
@@ -772,7 +694,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             return os.chown(self.root + path, user, group)
         except:
-            logging.debug( 'EXCEPTION CHOWN' )
             return -errno.EACCES
 
 
@@ -788,7 +709,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.mknod( self.root + path, mode, device )
         except:
-            logging.debug( 'EXCEPTION MKNOD' )
             op_result = -errno.EACCES
             
         return op_result
@@ -806,7 +726,6 @@ class MushroomMaster(Pyro.core.ObjBase):
         try:
             op_result = os.utime( self.root + path, times )
         except:
-            logging.debug( 'EXCEPTION UTIME' )
             op_result = -errno.EACCES
             
         return op_result
@@ -826,7 +745,6 @@ class MushroomMaster(Pyro.core.ObjBase):
             if not os.access( self.root + path, mode ):
                 raise
         except:
-            logging.debug( 'EXCEPTION ACCESS' )
             return -errno.EACCES
 
 
